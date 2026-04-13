@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l c:/d/Empresa4Cero/apps/e4c-factura/docs/spec/*.md)"
+    ],
+    "additionalDirectories": [
+      "C:/wamp/www/SisnetV3Desarrollo"
+    ]    
+  }
+}
