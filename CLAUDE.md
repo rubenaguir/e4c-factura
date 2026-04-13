@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-PWA React 19 de facturación (CFDI 4.0) y pagos (REP) para PLANATOR ERP / Sisnet V3.
+PWA React 19 de facturación (CFDI 4.0) y pagos (REP) para Empresa4Cero.
 Reemplaza pantallas ExtJS 3.4. Consume backend PHP como API externa sin modificarlo.
 
 ## Setup
