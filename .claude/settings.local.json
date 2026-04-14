@@ -3,7 +3,9 @@
     "allow": [
       "Bash(wc -l c:/d/Empresa4Cero/apps/e4c-factura/docs/spec/*.md)",
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo \"EXIT:$?\")"
     ],
     "additionalDirectories": [
       "C:/wamp/www/SisnetV3Desarrollo"

@@ -37,16 +37,18 @@
 
 ## Fase 3 — Catálogo de Productos
 
-**Entregable:** consulta virtualizada y detalle de producto.
+**Entregable:** CRUD completo de productos con búsqueda virtualizada.
 
-1. `endpoints/productos.ts` (`Search`/`ValidateSku`)
+Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
+
+1. `endpoints/productos.ts` — wraps `Search`, `Load`, `Add`, `Update`
 2. `ProductosContext` con paginación server-side + debounce 300ms
 3. `ProductosPage` virtualizada (`@tanstack/react-virtual`)
-4. `ProductoDetail` lectura; alta/edición pendiente de agent backend
+4. `ProductoDetail` — lectura + edición + alta inline
 
-**Leer antes:** `docs/spec/03-api-client.md` §Productos, `docs/spec/04-state.md`
+**Leer antes:** `docs/spec/03-api-client.md` §"Productos — Catálogo", `docs/spec/04-state.md`
 
-**Éxito:** búsqueda fluida con >10k registros.
+**Éxito:** búsqueda fluida con >10k registros; alta y edición funcionales contra backend real.
 
 ---
 

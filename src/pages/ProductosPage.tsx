@@ -1,8 +1,240 @@
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { Search, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useProductos } from "@/context/ProductosContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { ProductoRow } from "@/api/endpoints/productos";
+
+const ROW_HEIGHT = 52;
+
 export default function ProductosPage() {
+  const navigate = useNavigate();
+  const { state, pageSize, search, setSelected } = useProductos();
+  const { list, totalCount, loading, error, stale, page, filters } = state;
+
+  const [descripcion, setDescripcion] = useState(filters.descripcion ?? "");
+  const [sku, setSku] = useState(filters.sku ?? "");
+  const [estatus, setEstatus] = useState(filters.estatus || "A");
+
+  // Initial load / stale reload
+  useEffect(() => {
+    if (stale) {
+      search({ descripcion, sku, estatus: estatus === "all" ? "" : estatus }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stale]);
+
+  // Search-as-you-type — debounce lives in context
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    search({ descripcion, sku, estatus: estatus === "all" ? "" : estatus }, 0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [descripcion, sku, estatus]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    search({ descripcion, sku, estatus: estatus === "all" ? "" : estatus }, 0, true);
+  };
+
+  const handleRowClick = (row: ProductoRow) => {
+    setSelected(null);
+    navigate(`/productos/${encodeURIComponent(row.sku)}`);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const canPrev = page > 0;
+  const canNext = page < totalPages - 1;
+
+  // Virtualized list
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: list.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 10,
+  });
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold">Productos</h1>
-      <p className="text-muted-foreground mt-1">Próximamente — Fase 3</p>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-background">
+        <h1 className="text-lg font-semibold">Productos</h1>
+        <Button size="sm" onClick={() => navigate("/productos/nuevo")}>
+          <Plus className="h-4 w-4 mr-1" />
+          Nuevo
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-wrap gap-2 px-4 py-3 border-b bg-muted/30"
+      >
+        <div className="relative flex-1 min-w-[140px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Descripción"
+            className="pl-8 h-9 text-sm"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+          />
+        </div>
+        <Input
+          placeholder="SKU"
+          className="w-32 h-9 text-sm"
+          value={sku}
+          onChange={(e) => setSku(e.target.value)}
+        />
+        <Select value={estatus} onValueChange={setEstatus}>
+          <SelectTrigger className="w-28 h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="A">Activos</SelectItem>
+            <SelectItem value="I">Inactivos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button type="submit" size="sm" disabled={loading} className="h-9">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          <span className="ml-1 hidden sm:inline">Buscar</span>
+        </Button>
+      </form>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        {error && (
+          <div className="p-4 shrink-0">
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {/* Desktop sticky header */}
+        <div className="hidden md:flex shrink-0 border-b bg-muted/50 text-sm">
+          <div className="px-4 py-2 w-40 font-medium text-muted-foreground">SKU</div>
+          <div className="px-4 py-2 flex-1 font-medium text-muted-foreground">Descripción</div>
+          <div className="px-4 py-2 w-20 font-medium text-muted-foreground">Unidad</div>
+          <div className="px-4 py-2 w-24 font-medium text-muted-foreground">Estatus</div>
+          <div className="px-4 py-2 w-40 font-medium text-muted-foreground">Actualización</div>
+        </div>
+
+        {/* Skeleton */}
+        {loading && (
+          <div className="p-4 space-y-3 shrink-0">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex gap-4 items-center">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && list.length === 0 && (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+            Sin resultados
+          </p>
+        )}
+
+        {/* Virtualized scroll container */}
+        {!loading && list.length > 0 && (
+          <div ref={parentRef} className="flex-1 overflow-auto min-h-0">
+            <div
+              style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}
+            >
+              {rowVirtualizer.getVirtualItems().map((vRow) => {
+                const row = list[vRow.index];
+                return (
+                  <div
+                    key={row.sku}
+                    onClick={() => handleRowClick(row)}
+                    className="absolute w-full flex items-center border-b hover:bg-muted/40 cursor-pointer transition-colors"
+                    style={{ top: vRow.start, height: vRow.size }}
+                  >
+                    {/* Desktop layout */}
+                    <div className="hidden md:flex w-full items-center text-sm">
+                      <div className="px-4 w-40 font-mono text-xs truncate">{row.sku}</div>
+                      <div className="px-4 flex-1 truncate">{row.descripcion}</div>
+                      <div className="px-4 w-20 text-muted-foreground text-xs">{row.unidad_id}</div>
+                      <div className="px-4 w-24">
+                        <Badge variant={row.estatus === "A" ? "default" : "secondary"}>
+                          {row.estatus === "A" ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </div>
+                      <div className="px-4 w-40 text-muted-foreground text-xs truncate">
+                        {row.actualizacion_fecha}
+                      </div>
+                    </div>
+
+                    {/* Mobile layout */}
+                    <div className="md:hidden flex w-full items-center justify-between px-4">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{row.descripcion}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{row.sku}</p>
+                      </div>
+                      <Badge
+                        variant={row.estatus === "A" ? "default" : "secondary"}
+                        className="shrink-0 text-xs ml-2"
+                      >
+                        {row.estatus === "A" ? "Activo" : "Inact."}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalCount > 0 && (
+        <div className="flex items-center justify-between px-4 py-2 border-t bg-background text-sm shrink-0">
+          <span className="text-muted-foreground">
+            {totalCount} registro{totalCount !== 1 ? "s" : ""}
+            {totalPages > 1 && ` · Página ${page + 1} de ${totalPages}`}
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canPrev || loading}
+              onClick={() => search(undefined, page - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canNext || loading}
+              onClick={() => search(undefined, page + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -90,25 +90,320 @@ Mantener consistencia con el serializador ExtJS del backend PHP.
 | `PrintPdf` | `serie`, `folio` |
 
 ### Clientes (`ventas:clientes:clientes:*`)
-| Acción | Params clave |
-|---|---|
-| `Search` | `start`, `limit`, `razon_social`, `rfc`, `cliente_id` |
-| `Load` | `cliente_id` |
-| `Add` | `rfc`, `razon_social`, `regimen_fiscal`, `cp` (mínimos) |
-| `Update` | `cliente_id` + payload |
-| `Delete` | `cliente_id` |
-| `SearchDirecciones` | `cliente_id` |
-| `SaveDireccion` | `cliente_id` + payload dirección |
-| `ValidateCodigoPostal` | `cp` |
 
-### Productos / Conceptos
-| opReq | Params |
-|---|---|
-| `ventas:facturas_venta_33:facturas_venta_conceptos:LoadLovFieldSku` | `query`, `start`, `limit` |
-| `ventas:facturas_venta_33:facturas_venta_conceptos:ValidateSku` | `sku` |
-| `inventarios:catalogo_productos:catalogo_productos:*` | CRUD (pendiente confirmar con backend) |
+#### Search
+Params: `cliente_id`, `nombre`, `rfc`, `pais`, `tipo_cliente_deudor=CLIENTE`, `tipo_cliente_id`, `estatus=A`
 
-**Forma de la respuesta del producto:**
+Respuesta: `{ totalCount, records: ClienteRow[] }`
+
+```typescript
+interface ClienteRow {
+  empresa_id: string
+  cliente_id: string
+  corporativo_id: string
+  tipo_cliente_deudor: string        // "CLIENTE"
+  rfc: string
+  nombre: string
+  calle: string | null
+  no_exterior: string | null
+  no_interior: string | null
+  colonia: string | null
+  localidad: string | null
+  referencia: string | null
+  municipio: string | null
+  estado: string | null
+  pais: string                       // "MEX"
+  codigo_postal: string | null
+  vendedor_id: string | null
+  tipo_cliente_id: string | null
+  regimen_fiscal_id: string | null
+  cuenta_contable: string | null
+  estatus: string                    // "A" | "I"
+  c_estado: string | null
+  c_municipio: string | null
+  c_colonia: string | null
+  c_localidad: string | null
+  actualizacion_fecha: string        // "DD/MM/YYYY HH:mm"
+}
+```
+
+#### Load
+Params: `cliente_id`
+
+Respuesta: `ClienteDetalle` — mismo shape que `ClienteRow` más los campos extendidos:
+
+```typescript
+interface ClienteDetalle extends ClienteRow {
+  num_proveedor: string | null
+  tax_id: string | null
+  num_reg_id_trib: string | null
+  metodo_de_pago: string | null
+  metodo_de_pago_descr: string | null
+  lista_precios_id: string
+  vendedor_nombre: string | null
+  tipo_cliente_descr: string | null
+  num_cta_pago: string | null
+  dias_credito: string              // numérico como string
+  limite_credito: string            // decimal como string, ej. "0.000000"
+  contactos: Contacto[]
+}
+
+interface Contacto {
+  contacto_id: string
+  area: string | null
+  nombres: string
+  apellidos: string
+  telefono: string | null
+  movil: string | null
+  fax: string | null
+  correo: string | null
+}
+```
+
+#### Add
+Alta rápida — solo campos mínimos requeridos:
+
+| Param | Valor mínimo |
+|---|---|
+| `nombre` | razón social |
+| `rfc` | RFC válido |
+| `codigo_postal` | CP fiscal |
+| `pais` | `"MEX"` |
+| `regimen_fiscal_id` | clave SAT, ej. `"616"` |
+| `tipo_cliente_deudor` | `"CLIENTE"` |
+| `estatus` | `"A"` |
+
+Params opcionales (enviar vacíos si no se capturan): `corporativo_id`, `corporativo_nombre`, `corporativo_rfc`, `calle`, `no_exterior`, `no_interior`, `c_colonia`, `colonia`, `c_municipio`, `municipio`, `c_localidad`, `localidad`, `c_estado`, `estado`, `referencia`, `tipo_cliente_id`, `tipo_cliente_descr`, `tax_id`, `num_reg_id_trib`, `dias_credito`, `limite_credito`, `metodo_de_pago`, `metodo_de_pago_descr`, `num_cta_pago`, `lista_precios_id`, `vendedor_id`, `vendedor_nombre`, `cuenta_contable`, `num_proveedor`
+
+Respuesta: `{ msg, record: ClienteDetalle, corporativo: [] }`
+
+> El backend crea automáticamente la dirección `FISCAL_1` al dar de alta el cliente.
+
+#### Update
+Params: `cliente_id` + todos los campos del payload de `Add` (sin `cliente_id` vacío).
+
+Respuesta: `{ msg, record: ClienteDetalle }`
+
+> **Inactivar cliente:** enviar `estatus=I`. No existe endpoint `Delete`.
+
+#### SearchDirecciones
+Params: `cliente_id`
+
+Respuesta: `{ totalCount, records: Direccion[] }`
+
+```typescript
+interface Direccion {
+  empresa_id: string
+  cliente_id: string
+  direccion_id: string              // ej. "FISCAL_1"
+  descripcion: string
+  calle: string | null
+  no_interior: string | null
+  no_exterior: string | null
+  colonia: string | null
+  localidad: string | null
+  referencia: string | null
+  municipio: string | null
+  estado: string | null
+  pais: string
+  codigo_postal: string | null
+  estatus: string
+  c_estado: string | null
+  c_municipio: string | null
+  c_localidad: string | null
+  c_colonia: string | null
+  ruta_id: string | null
+  actualizacion_usuario_id: string
+  actualizacion_fecha: string
+  creacion_usuario_id: string
+  creacion_fecha: string
+}
+```
+
+#### ValidateCodigoPostal
+Params: `c_codigo_postal`
+
+Respuesta:
+```typescript
+interface ValidateCPResponse {
+  c_codigo_postal: string
+  c_estado: string      // clave SAT, ej. "CMX"
+  estado: string        // descripción, ej. "Ciudad de Mexico"
+  c_municipio: string
+  municipio: string
+  c_localidad: string
+  localidad: string
+}
+```
+
+#### SaveDireccion
+Params: `cliente_id`, `direccion_id`, `update` (`"S"` para actualizar, omitir para insertar), más campos de dirección:
+`descripcion`, `calle`, `no_exterior`, `no_interior`, `codigo_postal`, `pais`, `c_colonia`, `colonia`, `c_municipio`, `municipio`, `c_localidad`, `localidad`, `c_estado`, `estado`, `referencia`, `estatus`, `ruta_id`
+
+Respuesta: `{ msg, record: Direccion }`
+
+### Productos — Catálogo (`inventarios:catalogo_inventarios:catalogo_inventarios:*`)
+
+Estos endpoints son para el **CRUD del catálogo maestro de productos** (Fase 3).  
+No confundir con los dos endpoints de facturación que se describen al final de esta sección.
+
+#### Search
+Params (todos opcionales, enviar vacíos si no aplican):
+
+| Param | Descripción |
+|---|---|
+| `sku` | Código interno |
+| `codigo_ean` | Código de barras |
+| `clave_prod_ser_sat` | Clave SAT prod/serv |
+| `descripcion` | Texto libre |
+| `marca` | — |
+| `modelo` | — |
+| `unidad_id` | Ej. `"PZ"` |
+| `clasificador_id` | — |
+| `usa_lotes` | `"S"` / `"N"` / `""` |
+| `usa_series` | `"S"` / `"N"` / `""` |
+| `almacenable` | `"S"` / `"N"` / `""` |
+| `estatus` | `"A"` (activo), `"I"` (inactivo), `""` (todos) |
+
+Respuesta: `{ totalCount: number, records: ProductoRow[] }`
+
+```typescript
+interface ProductoRow {
+  start: string
+  empresa_id: string
+  sku: string
+  descripcion: string
+  marca: string | null
+  modelo: string | null
+  caracteristicas: string | null
+  especificaciones: string | null
+  almacenable: string              // "S" | "N"
+  codigo_ean: string | null
+  composicion: string | null
+  costeo: string                   // "PROMEDIO"
+  unidad_id: string                // "PZ"
+  usa_lotes: string                // "S" | "N"
+  usa_series: string               // "S" | "N"
+  es_paquete: string               // "S" | "N"
+  estatus: string                  // "A" | "I"
+  esquema_impuestos_id: string     // "GENERAL"
+  actualizacion_usuario_id: string
+  actualizacion_fecha: string      // "YYYY-MM-DD HH:mm:ss.xxxxxx"
+  clave_prod_ser_sat: string | null
+  sat_cporte_peso_en_kg: string | null
+  mostrar_en_ecommerce: string     // "S" | "N"
+  categoria: string | null
+}
+```
+
+#### Load
+Params: `sku`
+
+Respuesta: `ProductoDetalle`
+
+```typescript
+interface ProductoDetalle {
+  sku: string
+  descripcion: string
+  marca: string | null
+  modelo: string | null
+  caracteristicas: string | null
+  especificaciones: string | null
+  almacenable: string
+  codigo_ean: string | null
+  composicion: string | null
+  clave_prod_ser_sat: string | null
+  clave_prod_ser_sat_desc: string | null
+  fraccion_arancelaria: string | null
+  costeo: string
+  unidad_id: string
+  es_paquete: string
+  es_perecedero: string
+  usa_lotes: string
+  usa_series: string
+  estatus: string
+  costo_promedio_mn: string        // decimal como string, ej. "670.820000"
+  esquema_impuestos_id: string
+  sat_cporte_peso_en_kg: string | null
+  categoria: string | null
+  mostrar_en_ecommerce: string
+  actualizacion_usuario_id: string
+  actualizacion_fecha: string      // "DD/MM/YYYY HH:mm"
+  categoria_contable_id: string
+  partes: []
+  equivalentes: []
+  unidades: []
+  variantes: []
+  grupo: []
+  impuestos: ImpuestoEsquema[]
+  clasificacion: []
+  existencias: ExistenciaNode[]
+  fotografia: string
+}
+
+interface ImpuestoEsquema {
+  esquema_impuestos_id: string     // "GENERAL"
+  region_id: string                // "GENERAL"
+  aplicacion: string               // "T" (traslado) | "R" (retención)
+  num_impuesto: string             // "1"
+  impuesto: string                 // "IVA"
+  tipo_factor: string | null
+  tasa: string                     // "16.0000"
+}
+
+interface ExistenciaNode {
+  almacen_id?: string
+  descripcion: string | null
+  existencia: number | string
+  expanded: boolean | string
+  leaf?: string                    // "true" en nodos hoja
+  children?: ExistenciaNode[]
+}
+```
+
+> El nodo raíz de `existencias` tiene `descripcion: "GLOBAL"` con la suma total.  
+> Los nodos hijos tienen `almacen_id` con la existencia por almacén.
+
+#### Add
+Params requeridos:
+
+| Param | Valor mínimo |
+|---|---|
+| `sku` | Código único del producto |
+| `descripcion` | Descripción del artículo |
+| `unidad_id` | Ej. `"PZ"` |
+| `estatus` | `"A"` |
+| `esquema_impuestos_id` | Ej. `"GENERAL"` |
+| `almacenable` | `"S"` / `"N"` |
+| `costeo` | `"PROMEDIO"` |
+| `es_paquete` | `"S"` / `"N"` |
+| `es_perecedero` | `"S"` / `"N"` |
+| `usa_lotes` | `"S"` / `"N"` |
+| `usa_series` | `"S"` / `"N"` |
+
+Params opcionales (enviar vacíos si no aplican): `codigo_ean`, `marca`, `modelo`, `caracteristicas`, `especificaciones`, `composicion`, `costo_promedio_mn`, `categoria_contable_id`, `clave_prod_ser_sat`, `clave_prod_ser_sat_desc`, `clasificacion_abc`, `mostrar_en_ecommerce`, `categoria`, `fraccion_arancelaria`, `sat_cporte_peso_en_kg`, `fotografia`
+
+Respuesta: `{ msg: string, record: ProductoDetalle }`
+
+#### Update
+Params: `sku` + todos los campos del payload de `Add`.
+
+Respuesta: `{ msg: string, record: ProductoDetalle }`
+
+> **Inactivar producto:** enviar `estatus=I`. No existe endpoint `Delete`.
+
+---
+
+### Productos — Búsqueda en Facturación (`ventas:facturas_venta_33:facturas_venta_conceptos:*`)
+
+Estos dos endpoints se usan **exclusivamente en la pantalla de facturación** para buscar/validar un SKU al agregar conceptos. No son el CRUD del catálogo.
+
+#### LoadLovFieldSku
+Busca productos mientras el usuario escribe (autocomplete).
+
+Params: `query`, `start`, `limit`
+
+**Forma de la respuesta:**
 ```json
 {
   "sku": "04470030000",
@@ -137,6 +432,13 @@ Notas:
 - `precios[]` = tuplas `[lista_id, precio, moneda, tipo_cambio]`.
 - `impuestos_traslados[].importe` llega en `"0"` — **la UI lo calcula**.
 - `objeto_impuesto_sat`: `"01"` no objeto, `"02"` sí objeto, `"03"` sí no obligado, `"04"` sí no desglose.
+
+#### ValidateSku
+Valida un SKU exacto ingresado manualmente.
+
+Params: `sku`
+
+Respuesta: mismo shape que `LoadLovFieldSku` para el registro encontrado, o error si no existe.
 
 ### LOVs SAT (`Sistem:Lov:Lov:*`)
 | LOV | Acción |
