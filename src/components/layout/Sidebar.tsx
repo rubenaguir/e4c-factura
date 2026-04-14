@@ -21,8 +21,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     >
       {/* Logo */}
       <div className={cn("flex items-center gap-3 h-14 px-3 border-b", collapsed && "justify-center")}>
-        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          <span className="text-primary-foreground font-bold text-xs">E4</span>
+        <div className="h-8 w-8 rounded-lg brand-gradient flex items-center justify-center shrink-0 shadow-sm">
+          <span className="text-white font-bold text-xs">E4</span>
         </div>
         {!collapsed && (
           <span className="font-semibold text-sm truncate">E4C Facturación</span>

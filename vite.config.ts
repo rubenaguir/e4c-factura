@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  base: "/",
+  base: "",
   plugins: [
     react(),
     VitePWA({
@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: "E4C Facturación",
         short_name: "E4C",
-        start_url: "/",
+        start_url: "",
         display: "standalone",
         theme_color: "#0f172a",
         background_color: "#ffffff",

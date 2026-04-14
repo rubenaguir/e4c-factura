@@ -6,6 +6,8 @@ export interface SucursalOption {
   sucursal_id: string;
   empresa_nombre: string;
   sucursal_nombre: string;
+  empresa_sucursal_id: string;
+  descripcion: string;
 }
 
 export interface LoginResponse {
@@ -19,13 +21,13 @@ export interface LoginResponse {
 
 export interface SearchSucursalesResponse {
   totalCount: number;
-  records: SucursalOption[];
+  record: SucursalOption[];
 }
 
 export function searchSucursalesUsuario(usuario: string, contrasena: string) {
   return apiCall<SearchSucursalesResponse>(
     "seguri:acceso:acceso_jwt:SearchSucursalesUsuario",
-    { usuario, contrasena }
+    { usuario_id: usuario, contrasena }
   );
 }
 
@@ -41,6 +43,6 @@ export function login(
     contrasena,
     workspace,
     empresa_id,
-    sucursal_id,
+    sucursal: sucursal_id,
   });
 }

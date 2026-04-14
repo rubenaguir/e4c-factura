@@ -4,26 +4,67 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ── Paleta de marca (extraída del ícono E4C) ───────────────────────────
+       Gradiente del ícono: azul-cian #0CA1EA (↙) → verde-cian #00D19E (↗)
+    ──────────────────────────────────────────────────────────────────────── */
+    --background: 200 33% 97%;        /* #F6FAFC — fondo frío casi blanco   */
+    --foreground: 208 66% 15%;        /* #0E2B40 — azul marino oscuro        */
+
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 208 66% 15%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --popover-foreground: 208 66% 15%;
+
+    --primary: 200 88% 48%;           /* #0CA1EA — azul-cian de marca        */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 163 100% 41%;        /* #00D19E — verde-cian de marca        */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 200 40% 93%;             /* #E2EFF6 — azul muy claro            */
+    --muted-foreground: 200 22% 45%;  /* #587A8E — gris azulado              */
+
+    --accent: 163 70% 90%;            /* #CDFAEE — tint verde para hover bg  */
+    --accent-foreground: 163 100% 26%;/* #008560 — verde oscuro para texto   */
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 35% 88%;            /* #D1E8F2 — borde azul suave          */
+    --input: 200 35% 88%;
+    --ring: 200 88% 48%;
     --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 208 55% 9%;         /* #0A1D2C */
+    --foreground: 200 50% 95%;        /* #EEF7FB */
+
+    --card: 208 50% 13%;              /* #0F2538 */
+    --card-foreground: 200 50% 95%;
+
+    --popover: 208 50% 13%;
+    --popover-foreground: 200 50% 95%;
+
+    --primary: 199 89% 60%;           /* #38BDF8 — sky-400 para dark mode    */
+    --primary-foreground: 208 66% 8%;
+
+    --secondary: 160 60% 52%;         /* #34D399 — emerald-400               */
+    --secondary-foreground: 160 100% 8%;
+
+    --muted: 205 45% 16%;             /* #152E3E */
+    --muted-foreground: 200 30% 60%;  /* #7EA8BD */
+
+    --accent: 163 60% 18%;            /* #0B4432 */
+    --accent-foreground: 163 80% 75%; /* #67EEC6 */
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 205 40% 20%;            /* #1A3A50 */
+    --input: 205 40% 20%;
+    --ring: 199 89% 60%;
   }
 
   * {
@@ -40,5 +81,18 @@
 
   #root {
     @apply min-h-screen;
+  }
+}
+
+/* ── Gradiente de marca reutilizable ──────────────────────────────────────── */
+@layer utilities {
+  .brand-gradient {
+    background: linear-gradient(135deg, hsl(200 88% 48%) 0%, hsl(163 100% 41%) 100%);
+  }
+  .brand-gradient-text {
+    background: linear-gradient(135deg, hsl(200 88% 38%) 0%, hsl(163 100% 32%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

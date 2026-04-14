@@ -26,8 +26,8 @@ export default function TopBar({ mobileMenuOpen, onMobileMenuToggle }: TopBarPro
 
       {/* Logo mobile */}
       <div className="flex items-center gap-2 md:hidden">
-        <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-xs">E4</span>
+        <div className="h-7 w-7 rounded-md brand-gradient flex items-center justify-center shadow-sm">
+          <span className="text-white font-bold text-xs">E4</span>
         </div>
         <span className="font-semibold text-sm">E4C Facturación</span>
       </div>

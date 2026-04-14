@@ -21,8 +21,8 @@ type Step1Values = z.infer<typeof step1Schema>;
 
 // ── Paso 2: selección de sucursal ───────────────────────────────────────────
 const step2Schema = z.object({
-  empresaId: z.string().min(1, "Selecciona una empresa/sucursal"),
-  sucursalId: z.string().min(1),
+  empresaId: z.string().min(0),
+  sucursalId: z.string().min(1, "Selecciona una empresa/sucursal"),
 });
 type Step2Values = z.infer<typeof step2Schema>;
 
@@ -43,7 +43,6 @@ export default function LoginPage() {
   });
 
   const onStep1Submit = async (values: Step1Values) => {
-    debugger;
     setError(null);
     setLoading(true);
     try {
@@ -89,8 +88,8 @@ export default function LoginPage() {
   };
 
   const handleSucursalSelect = (s: SucursalOption) => {
-    form2.setValue("empresaId", s.empresa_id);
-    form2.setValue("sucursalId", s.sucursal_id);
+    // form2.setValue("empresaId", s.empresa_id);
+    form2.setValue("sucursalId", s.empresa_sucursal_id);
   };
 
   const volverAPaso1 = () => {
@@ -101,14 +100,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm shadow-lg">
+    <div className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: "linear-gradient(160deg, hsl(200 33% 94%) 0%, hsl(163 40% 93%) 100%)" }}
+    >
+      <Card className="w-full max-w-sm shadow-lg border-border/60">
         <CardHeader className="space-y-1 pb-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">E4</span>
+            <div className="h-9 w-9 rounded-lg brand-gradient flex items-center justify-center shadow-md">
+              <span className="text-white font-bold text-sm">E4</span>
             </div>
-            <CardTitle className="text-xl">E4C Facturación</CardTitle>
+            <CardTitle className="text-xl brand-gradient-text">E4C Facturación</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
             {step === 1 ? "Ingresa tus credenciales" : "Selecciona empresa y sucursal"}
@@ -165,11 +166,11 @@ export default function LoginPage() {
               <div className="space-y-2">
                 {sucursales.map((s) => {
                   const selected =
-                    form2.watch("empresaId") === s.empresa_id &&
-                    form2.watch("sucursalId") === s.sucursal_id;
+                    // form2.watch("empresaId") === s.empresa_id &&
+                    form2.watch("sucursalId") === s.empresa_sucursal_id;
                   return (
                     <button
-                      key={`${s.empresa_id}-${s.sucursal_id}`}
+                      key={`${s.empresa_sucursal_id}`}
                       type="button"
                       onClick={() => handleSucursalSelect(s)}
                       className={[
@@ -179,8 +180,8 @@ export default function LoginPage() {
                           : "border-border hover:border-primary/50 hover:bg-muted",
                       ].join(" ")}
                     >
-                      <p className="font-medium">{s.empresa_nombre}</p>
-                      <p className="text-xs text-muted-foreground">{s.sucursal_nombre}</p>
+                      <p className="font-medium">{s.descripcion}</p>
+                      {/* <p className="text-xs text-muted-foreground">{s.empresa_sucursal_id}</p> */}
                     </button>
                   );
                 })}
@@ -193,7 +194,7 @@ export default function LoginPage() {
                 <Button type="button" variant="outline" className="flex-1" onClick={volverAPaso1} disabled={loading}>
                   Regresar
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading || !form2.watch("empresaId")}>
+                <Button type="submit" className="flex-1" disabled={loading || !form2.watch("sucursalId")}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Entrar
                 </Button>

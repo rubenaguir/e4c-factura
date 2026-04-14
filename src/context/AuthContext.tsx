@@ -72,22 +72,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getSucursales = useCallback(
     async (usuario: string, contrasena: string): Promise<SucursalOption[]> => {
       const res = await searchSucursalesUsuario(usuario, contrasena);
-      pendingData.current = { usuario, contrasena, sucursales: res.records };
-      return res.records;
+      pendingData.current = { usuario, contrasena, sucursales: res.record };
+      return res.record;
     },
     []
   );
 
   const login = useCallback(
     async (_usuario: string, _contrasena: string, empresaId: string, sucursalId: string) => {
-      const { usuario, contrasena, sucursales } = pendingData.current!;
-
-      // Obtener workspace de la sucursal seleccionada
-      const sucursal = sucursales.find(
-        (s) => s.empresa_id === empresaId && s.sucursal_id === sucursalId
-      );
-      const workspace = sucursal?.workspace ?? `${empresaId}_${sucursalId}`;
-
+      const { usuario, contrasena } = pendingData.current!;
+      const workspace = 'default';
       const loginRes = await apiLogin(usuario, contrasena, workspace, empresaId, sucursalId);
 
       localStorage.setItem("sv3_session", loginRes.session);
