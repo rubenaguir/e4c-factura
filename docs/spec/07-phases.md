@@ -95,7 +95,7 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 ## Fase 6 — PWA en producción
 
 1. `vite build`
-2. Despliegue en subcarpeta Apache (`/sv3-facturacion/`)
+2. Despliegue en raiz Apache (`/`)
 3. QA Chrome desktop + Android + iOS Safari
 4. Activar runtime caching de lecturas
 
