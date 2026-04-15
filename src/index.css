@@ -71,6 +71,11 @@
     @apply border-border box-border;
   }
 
+  /* Evita que iOS Safari haga zoom al enfocar inputs (requiere font-size >= 16px) */
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+
   body {
     @apply bg-background text-foreground;
     margin: 0;
