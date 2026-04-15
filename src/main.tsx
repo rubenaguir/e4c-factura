@@ -5,17 +5,23 @@ import App from "./App.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { ClientesProvider } from "./context/ClientesContext.tsx";
 import { ProductosProvider } from "./context/ProductosContext.tsx";
+import { CatalogosProvider } from "./context/CatalogosContext.tsx";
+import { FacturasProvider } from "./context/FacturasContext.tsx";
 import PwaUpdateBanner from "./components/PwaUpdateBanner.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
-      <ClientesProvider>
-        <ProductosProvider>
-          <App />
-          <PwaUpdateBanner />
-        </ProductosProvider>
-      </ClientesProvider>
+      <CatalogosProvider>
+        <ClientesProvider>
+          <ProductosProvider>
+            <FacturasProvider>
+              <App />
+              <PwaUpdateBanner />
+            </FacturasProvider>
+          </ProductosProvider>
+        </ClientesProvider>
+      </CatalogosProvider>
     </AuthProvider>
   </StrictMode>
 );

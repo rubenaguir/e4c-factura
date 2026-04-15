@@ -8,9 +8,35 @@ export function setLogoutHandler(fn: () => void) {
   logoutHandler = fn;
 }
 
+/**
+ * Serializa params anidados en notación PHP bracket:
+ *   conceptos[0][sku]=xxx
+ *   precios[0][]=LISTA4 (array de arrays)
+ */
+function flattenParams(value: unknown, prefix: string, body: URLSearchParams): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, idx) => {
+      if (Array.isArray(item)) {
+        // array de arrays → conceptos[0][precios][1][] = valor
+        item.forEach((v) => body.append(`${prefix}[${idx}][]`, String(v ?? "")));
+      } else if (typeof item === "object" && item !== null) {
+        flattenParams(item, `${prefix}[${idx}]`, body);
+      } else {
+        body.append(`${prefix}[${idx}]`, String(item ?? ""));
+      }
+    });
+  } else if (typeof value === "object" && value !== null) {
+    for (const [k, v] of Object.entries(value)) {
+      flattenParams(v, `${prefix}[${k}]`, body);
+    }
+  } else {
+    body.set(prefix, String(value ?? ""));
+  }
+}
+
 export async function apiCall<T>(
   opReq: string,
-  params: Record<string, string | number | boolean> = {}
+  params: Record<string, unknown> = {}
 ): Promise<T> {
   const session = localStorage.getItem("sv3_session") ?? "";
 
@@ -18,7 +44,7 @@ export async function apiCall<T>(
   body.set("opReq", opReq);
   body.set("session", session);
   for (const [key, value] of Object.entries(params)) {
-    body.set(key, String(value));
+    flattenParams(value, key, body);
   }
 
   let url = API_BASE_URL;

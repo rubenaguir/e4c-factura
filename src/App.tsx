@@ -8,6 +8,7 @@ import ClientesPage from "@/pages/ClientesPage";
 import ClienteDetail from "@/pages/ClienteDetail";
 import ProductosPage from "@/pages/ProductosPage";
 import ProductoDetail from "@/pages/ProductoDetail";
+import FacturaDetail from "@/pages/FacturaDetail";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -40,6 +41,8 @@ const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/facturas" replace /> },
       { path: "facturas", element: <FacturasPage /> },
+      { path: "facturas/nuevo", element: <FacturaDetail /> },
+      { path: "facturas/:serie/:folio", element: <FacturaDetail /> },
       { path: "ingresos", element: <IngresosPage /> },
       { path: "clientes", element: <ClientesPage /> },
       { path: "clientes/nuevo", element: <ClienteDetail /> },

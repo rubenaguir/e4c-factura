@@ -9,6 +9,11 @@ export interface LovOption {
 // Session-level cache so LOVs survive component remounts without re-fetching
 const lovCache = new Map<string, LovOption[]>();
 
+/** Clear all cached LOV data. Call on logout so the next session fetches fresh data. */
+export function clearLovCache(): void {
+  lovCache.clear();
+}
+
 export function useLov(
   opReq: string,
   valueField: string,

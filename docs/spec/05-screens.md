@@ -26,30 +26,97 @@ Guard en `AppShell`: `!isAuthenticated` → redirect `/login`.
 
 ## FacturaDetail (pantalla principal)
 
-### Estructura visual
+### Estructura visual (mobile-first, vertical)
+
+Layout de secciones apiladas con sticky bottom bar. Desktop añade columnas pero mantiene el mismo orden.
 
 ```
-PageHeader + Acciones: [Guardar Prefactura] [Timbrar] [Cancelar] [Volver]
-
-┌── Cliente ──────────────────────────────────────────────────┐
-│ ClientePicker (con alta inline)                             │
-│ RFC · Razón Social · Uso CFDI · Régimen fiscal              │
-└─────────────────────────────────────────────────────────────┘
-┌── Comprobante ───────────────────────────────────────────────┐
-│ Serie · Folio · Fecha · Moneda · TC                         │
-│ Lista precios · Vendedor · Centro costo/utilidad            │
-│ Método pago (PUE/PPD) · Forma pago · Condiciones            │
-│ A crédito · Fecha vcto · Orden compra                       │
-└─────────────────────────────────────────────────────────────┘
-┌── Conceptos ─────────────────────────────────────────────────┐
-│ [+ Producto] (ProductoPicker con alta inline)               │
-│ SKU · Descripción (editable) · UM · Cant · Precio · Desc    │
-│ Subtotal · IVA · Retenciones · Total                        │
-└─────────────────────────────────────────────────────────────┘
-┌── Pago (opcional, solo PUE) ────────────────────────────────┐
-│ Cuenta cobro · Fecha · Referencia · Monto                   │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────┐
+│ ←  Nueva Factura       ···  │  TopBar (··· = acciones secundarias)
+├─────────────────────────────┤
+│                             │
+│  ╔══ CLIENTE ═════════════╗ │
+│  ║ [🔍 Buscar cliente...] ║ │  autocomplete full-width
+│  ║ ─────────────────────  ║ │
+│  ║ XAXX010101000          ║ │
+│  ║ PUBLICO EN GENERAL     ║ │
+│  ║ Uso: G03 · Reg: 616    ║ │
+│  ║              [Cambiar] ║ │
+│  ╚════════════════════════╝ │
+│                             │
+│  ╔══ COMPROBANTE ▼ ═══════╗ │  abierta por defecto
+│  ║ Método pago: [PUE ▼]   ║ │
+│  ║ Forma pago:  [01 Efec] ║ │
+│  ║ Fecha: [14/04/2026]    ║ │
+│  ║ Serie: A   Folio: auto ║ │
+│  ║ [+ Divisa / T.C.]      ║ │  expandible
+│  ╚════════════════════════╝ │
+│                             │
+│  ╔══ CONCEPTOS ═══════════╗ │
+│  ║ ┌──────────────────┐   ║ │
+│  ║ │ PROD-001    ✏ 🗑 │   ║ │  botones visibles + swipe-left
+│  ║ │ Llanta 10R15     │   ║ │
+│  ║ │ 2 PZ × $2,750    │   ║ │
+│  ║ │ Traslado IVA 16%:$880│ ║ │  ← cada impuesto en su línea
+│  ║ │ Retención ISR 5%:-$137│ ║ │  ← retención con signo negativo
+│  ║ │ Total:  $3,493   │   ║ │
+│  ║ └──────────────────┘   ║ │
+│  ║ [＋ Agregar producto]   ║ │
+│  ╚════════════════════════╝ │
+│                             │
+│  ╔══ TOTALES ══════════════╗ │
+│  ║ Subtotal          $2,750.00 ║ │
+│  ║ Traslado IVA 16%    $440.00 ║ │  ← un renglón por (Aplic+Imp+Tasa)
+│  ║ Retención ISR 5%   −$137.50 ║ │  ← retenciones en negativo
+│  ║ ──────────────────────── ║ │
+│  ║ TOTAL             $3,052.50 ║ │
+│  ╚════════════════════════╝ │
+│                             │
+│  ╔══ PAGO (solo PUE) ═════╗ │  oculto si PPD
+│  ║ Cuenta cobro: [...]    ║ │
+│  ║ Referencia:   [...]    ║ │
+│  ╚════════════════════════╝ │
+│                             │
+├─────────────────────────────┤
+│  [Prefactura]  [Timbrar ▶]  │  sticky bottom bar
+└─────────────────────────────┘
 ```
+
+**Edición de concepto** — abre Sheet (bottom drawer en mobile, Dialog en desktop):
+```
+╔══ Editar concepto ════════════════╗
+║ Descripción: [________________] ║
+║ Cantidad:    [2            ]    ║
+║ Precio:      [$2,750       ]    ║  en la moneda de la factura
+║ Descuento:   [0%           ]    ║
+║                                 ║
+║ ── Impuestos ─────────────────  ║
+║ [＋ Agregar]  [－ Eliminar]      ║
+║                                 ║
+║  Aplicación  Impuesto  Tasa  Importe   ║
+║  Traslado    IVA       16%   $440.00   ║  ← calculado (base × tasa)
+║  Retención   ISR        5%   $137.50   ║  ← calculado
+║                                 ║
+║ ─────────────────────────────── ║
+║              [Cancelar]  [OK]   ║
+╚═════════════════════════════════╝
+```
+
+Fila de impuesto editable: Aplicación (`Traslado`/`Retención`), Impuesto (`IVA`/`ISR`/`IEPS`...), Tipo Factor (`Tasa`/`Cuota`/`Exento`), Tasa (editable), Importe (calculado, solo lectura). El usuario puede agregar o quitar filas libremente.
+
+**Factura timbrada** (modo lectura) — sticky bar cambia:
+```
+│  [PDF ↓]  [✉ Correo]  [··· Cancelar]  │
+```
+
+### Decisiones de diseño mobile
+
+| # | Decisión |
+|---|---|
+| 1 | **Conceptos: botones ✏ 🗑 visibles en la card** + swipe-left como atajo. Ambos mecanismos coexisten para evitar confusión. |
+| 2 | **Sección Comprobante abierta por defecto.** PUE/PPD depende del cliente, no del usuario. |
+| 3 | **Alta inline:** `<Sheet>` en mobile, `<Dialog>` en desktop (breakpoint `md`). |
+| 4 | **Lista de precios:** visible solo cuando existen más de una. Al cambiar moneda se filtran las listas disponibles para esa moneda. `precio_unitario` siempre editable; se interpreta en la moneda seleccionada para la factura. |
 
 ### Alta inline de cliente (ClientePicker)
 
@@ -65,24 +132,39 @@ Mismo patrón. Campos mínimos:
 
 ### Cálculo de impuestos (AUTHORITATIVE en frontend)
 
-1. Al agregar concepto → copiar `impuestos_traslados`/`impuestos_retenciones` del producto.
-2. Calcular `importe` = `base × tasa` (base = `cantidad × precio − descuento`; cuota fija si `tipo_factor === 'Cuota'`).
-3. Usuario puede **agregar / quitar / editar impuestos por línea**.
-4. Recalcular totales al cambiar cantidad, precio, descuento o impuestos.
+1. Al agregar concepto → copiar `impuestos_traslados`/`impuestos_retenciones` del producto como punto de partida.
+2. Calcular `importe` por fila = `base × tasa` (base = `cantidad × precio − descuento`; cuota fija si `tipo_factor === 'Cuota'`).
+3. Usuario puede **agregar / quitar / editar filas de impuesto por concepto** desde el Sheet de edición (tabla con columnas: Aplicación, Impuesto, Tipo Factor, Tasa, Importe calculado).
+4. Recalcular importes al cambiar cantidad, precio, descuento o tasa de cualquier impuesto.
 5. El payload `Add`/`AddPrefactura` envía `impuestos_traslados` + `impuestos_retenciones` con `importe` calculado.
+
+**Totales:**
+```
+Subtotal   = Σ(cantidad × precio − descuento) de todos los conceptos
+Total      = Subtotal + Σ(traslados.importe) − Σ(retenciones.importe)
+```
+En la sección Totales se muestra **un renglón por cada combinación única de (Aplicación + Impuesto + Tasa)**, agregando los importes de todos los conceptos. Ejemplo:
+- `Subtotal              $2,750.00`
+- `Traslado IVA 16.0000%   $440.00`
+- `Retención ISR 5%       −$137.50`
+- `Total               $3,052.50`
 
 ### Prefactura vs. Timbrado
 
-- **Guardar Prefactura** → `AddPrefactura` (o `UpdatePrefactura`). Estatus `R`. Sin SAT.
-- **Timbrar directo** → `Add` (crea + timbra).
-- **Timbrar prefactura existente** → `Stamp(serie, folio)`.
-- Respuesta exitosa → navegar a `/facturas/:serie/:folio` en modo lectura.
+- **Guardar Prefactura** → `AddPrefactura` (crea) o `UpdatePrefactura` (modifica). Estatus `P`. `uuid: null`. Sin SAT.
+- **Timbrar directo** → `Add` (crea + timbra en un paso). Estatus resultante `R`.
+- **Timbrar prefactura existente** → `Stamp(serie, folio)`. Estatus cambia a `R`.
+- `Add`, `AddPrefactura`, `UpdatePrefactura` y `Stamp` usan **el mismo payload**; solo difiere el `opReq`.
+- Respuesta exitosa (todas) → `{ msg, log, record: FacturaCompleta }`. Navegar a `/facturas/:serie/:folio` en modo lectura.
 
 ### Moneda y tipo de cambio
 
 - Default MXN, TC = 1 (ocultos hasta expandir "Divisa").
 - Al cambiar a USD/EUR → input TC manual + botón "Sugerir TC del día" (LOV).
-- Al cambiar lista de precios o moneda → reemplazar `precio_unitario` de cada concepto usando `precios[]` del producto (match por `lista_precios_id` o `moneda_id`).
+- **Al cambiar moneda → solo filtrar listas de precios disponibles para esa moneda. NO modificar `precio_unitario` de los conceptos existentes.**
+- **La lista de precios es por concepto, no por factura.** Cada concepto tiene su propio selector de lista de precios (visible solo si hay más de una). Al cambiar la lista de un concepto → actualizar únicamente el `precio_unitario` de ese concepto usando `precios[]` del producto (match por `lista_precios_id`). Los demás conceptos no se tocan.
+- `precio_unitario` siempre editable por el usuario; se interpreta en la moneda activa de la factura.
+- El campo `lista_precios_id` del root del payload refleja la lista del primer concepto (o vacío); el authoritative es el `lista_precios_id` dentro de cada concepto.
 
 ### Pago integrado
 
@@ -95,17 +177,18 @@ Mismo patrón. Campos mínimos:
 
 ### Estados y botones disponibles
 
-| Estatus | Acciones |
-|---|---|
-| `R` Prefactura | Editar · Timbrar · Eliminar |
-| `T` Timbrada | Ver PDF · Enviar correo · Cancelar (solo lectura) |
-| `C` Cancelada | Ver PDF · Ver acuse (solo lectura) |
+| Estatus | Descripción | Acciones |
+|---|---|---|
+| `P` Prefactura | Sin timbrar, `uuid: null` | Editar · Timbrar · Eliminar |
+| `R` Registrada/Timbrada | Timbrada en SAT, tiene `uuid` | Ver PDF · Enviar correo · Cancelar |
+| `R` + `cancelacion_estatus: "En proceso"` | Cancelación solicitada al SAT, pendiente confirmación | Re-intentar cancelación |
+| `C` Cancelada | Cancelada en SAT | Ver PDF · Ver acuse (solo lectura) |
 
 ---
 
 ## FacturasPage (consulta)
 
-- Filtros: rango fechas (default −30 días), cliente, serie, folio, estatus, UUID.
+- Filtros: `fecha_inicial` (default −30 días), `fecha_final`, `rfc`, `nombre`, `serie`, `folio`, `pedido_serie`, `pedido_folio`, `estatus`, `disable_sucursal_filter`.
 - Tabla desktop / tarjetas mobile.
 - Paginación server-side (`start`/`limit=50`).
 - Acciones por fila: ver, PDF, correo.
@@ -137,7 +220,10 @@ Búsqueda incremental sobre SKU y descripción. Virtualización con `react-virtu
 
 ---
 
-## Payload real — `AddPrefactura`
+## Payload — `Add` / `AddPrefactura` / `UpdatePrefactura` / `Stamp`
+
+Los cuatro endpoints comparten el mismo payload. La diferencia es únicamente el `opReq`.  
+`UpdatePrefactura` y `Stamp` además requieren `serie` y `folio` del documento a modificar.
 
 ```json
 {
@@ -148,9 +234,10 @@ Búsqueda incremental sobre SKU y descripción. Virtualización con `react-virtu
   "receptor_rfc": "RAVM810219IW0",
   "receptor_regimen_fiscal_id": "612",
   "lista_precios_id": "",
-  "calle": "", "no_exterior": "", "no_interior": "",
-  "colonia": "", "municipio": "", "codigo_postal": "",
-  "localidad": "", "estado": "", "pais": "MEX",
+  "calle": "Monterrey", "no_exterior": "22", "no_interior": "",
+  "colonia": "Vergel de Guadalupe", "municipio": "Nezahualcoyotl",
+  "codigo_postal": "57150", "localidad": "Ciudad Nezahualcoyotl",
+  "estado": "Mexico", "pais": "MEX",
   "vendedor_id": "", "vendedor_nombre": "",
   "centro_costo_id": "", "centro_utilidad_id": "",
   "condiciones_de_pago": "", "confirmacion_sat": "",
@@ -158,7 +245,7 @@ Búsqueda incremental sobre SKU y descripción. Virtualización con `react-virtu
   "metodo_pago": "PPD", "metodo_pago_descr": "Pago en parcialidades o diferido",
   "moneda_id": "MXN", "tipo_cambio": "1", "decimales_sat": "2",
   "forma_pago": "99", "forma_pago_descr": "Por definir",
-  "fecha_vencimiento": "13/05/2026", "a_credito": "N",
+  "fecha_vencimiento": "14/05/2026", "a_credito": "N",
   "NumRegIdTrib": "", "orden_compra_cliente": "",
   "conceptos": [
     {
@@ -194,26 +281,38 @@ Búsqueda incremental sobre SKU y descripción. Virtualización con `react-virtu
     "estado": "", "codigo_postal": "", "leyenda_impresa": ""
   },
   "info_seguros": {
-    "aseguradora_id": "", "poliza": "", "vehiculo_serie": "",
-    "deducible_porcentaje": "0", "deducible_importe": "0", "integra_deducible": "N"
+    "aseguradora_id": "", "aseguradora_nombre": "", "orden_servicio": "",
+    "asegurado_nombre": "", "poliza": "", "vehiculo_serie": "", "no_siniestro": "",
+    "vehiculo_modelo": "", "vehiculo_tarjeta_circulacion": "", "asegurado_id_oficial": "",
+    "vehiculo_tipo": "", "autorizo_nombre": "", "inciso": "", "num_reporte": "",
+    "num_folio": "", "num_cotizacion": "", "vehiculo_marca": "", "vehiculo_submarca": "",
+    "vehiculo_color": "", "vehiculo_placa": "", "tipo_servicio": "",
+    "deducible_porcentaje": "0", "deducible_importe": "0", "integra_deducible": "N",
+    "descuento_aseguradora_porcent": "", "descuento_aseguradora_importe": "",
+    "fecha_instalacion": "", "fecha_digitaliza_expediente": ""
   },
   "comercio_exterior": {
-    "tipo_operacion": "", "clave_de_pedimento": "", "incoterm": "",
-    "subdivision": "0", "tipo_cambio_usd": "", "total_usd": ""
+    "tipo_operacion": "2", "clave_de_pedimento": "A1",
+    "num_certificado_origen": "", "incoterm": "", "certificado_origen": "",
+    "numero_exportador_confiable": "", "subdivision": "0",
+    "tipo_cambio_usd": "", "total_usd": "", "observaciones": ""
   },
   "detallista": {
     "document_status": "", "requestForPaymentIdentification": "",
     "buyer": { "gln": "", "personOrDepartmentName": "" },
-    "seller": { "gln": "", "type": "" }
-  },
-  "es_prefactura": "S"
+    "seller": { "gln": "", "type": "", "seller_alt_party_identification": "" },
+    "delivery_note_reference_date": "", "order_identification_reference_date": "",
+    "special_instruction_code": ""
+  }
 }
 ```
 
 **Notas del payload:**
-- `es_prefactura: "S"` para `AddPrefactura`, `"N"` para `Add` (timbrado directo).
+- `Add` timbra directo; `AddPrefactura` guarda sin timbrar. No hay campo `es_prefactura` — el `opReq` distingue la operación.
+- `UpdatePrefactura` y `Stamp` incluyen además `serie`, `folio`, `estatus`, `fecha` del documento existente.
 - Todos los valores numéricos viajan **como string**.
-- Los bloques de complementos (`info_seguros`, `comercio_exterior`, etc.) se envían siempre, vacíos en Fase 4.
+- Los bloques de complementos (`info_seguros`, `comercio_exterior`, `compl_serv_par_construc`, `detallista`) se envían **siempre**, vacíos en Fase 4.
+- La clave del objeto en el response es `compl_serv_parc_construc` (con `c`), pero en el payload del request se usa `compl_serv_par_construc` (sin `c`).
 
 ### Payload Ingreso (`tesoreria:...:Add`)
 
@@ -235,7 +334,7 @@ aplicaciones=[
 
 ## Estatus de documentos
 
-`R` Registrado · `T` Timbrado · `C` Cancelado · `P` Procesado · `A` Autorizado
+`P` Prefactura (sin timbrar) · `R` Registrado/Timbrado (en SAT) · `C` Cancelado · `A` Autorizado
 
 ## Multi-tenancy
 

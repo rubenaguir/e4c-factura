@@ -57,7 +57,7 @@ Módulos principales:
 | Conceptos/productos | `ventas:facturas_venta_33:facturas_venta_conceptos:*` |
 | Ingresos/REP | `tesoreria:registro_ingresos_33:registro_ingresos:*` |
 | Clientes | `ventas:clientes:clientes:*` |
-| LOVs SAT | `Sistem:Lov:Lov:*` |
+| LOVs SAT y Clientes LOV | `Lov:Lov:Lov:*` |
 | Auth | `seguri:acceso:acceso_jwt:*` |
 
 ---
