@@ -14,6 +14,7 @@ import { useFacturas } from "@/context/FacturasContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -243,18 +244,16 @@ export default function FacturasPage() {
         className="flex flex-wrap gap-2 px-4 py-3 border-b bg-muted/30"
       >
         <div className="flex gap-1 items-center">
-          <Input
-            type="date"
+          <DateInput
             className="h-9 text-sm w-36"
             value={fechaIni}
-            onChange={(e) => setFechaIni(e.target.value)}
+            onChange={setFechaIni}
           />
           <span className="text-muted-foreground text-sm">–</span>
-          <Input
-            type="date"
+          <DateInput
             className="h-9 text-sm w-36"
             value={fechaFin}
-            onChange={(e) => setFechaFin(e.target.value)}
+            onChange={setFechaFin}
           />
         </div>
 
