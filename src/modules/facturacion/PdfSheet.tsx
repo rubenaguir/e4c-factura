@@ -7,22 +7,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { openPdfBlob } from "@/lib/pdf";
-
-export interface PdfSheetState {
-  open: boolean;
-  loading: boolean;
-  error: string | null;
-  blob: Blob | null;
-  filename: string;
-}
-
-export const PDF_SHEET_CLOSED: PdfSheetState = {
-  open: false,
-  loading: false,
-  error: null,
-  blob: null,
-  filename: "",
-};
+import type { PdfSheetState } from "./pdfSheetState";
 
 interface PdfSheetProps {
   state: PdfSheetState;

@@ -31,6 +31,15 @@ export function searchSucursalesUsuario(usuario: string, contrasena: string) {
   );
 }
 
+export interface ValidateSessionResponse {
+  success: boolean;
+  session: string;
+}
+
+export function validateSession() {
+  return apiCall<ValidateSessionResponse>("seguri:acceso:acceso_jwt:ValidateSession");
+}
+
 export function login(
   usuario: string,
   contrasena: string,

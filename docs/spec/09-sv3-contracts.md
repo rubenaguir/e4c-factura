@@ -1,4 +1,4 @@
-Ejemplos de interaccion con el backend para modulo de facturación
+## Ejemplos de interaccion con el backend para modulo de facturación
 
 #### Endpoint : opReq=ventas:facturas_venta_33:facturas_venta:Search
 
@@ -1725,3 +1725,205 @@ Response:
 data:application/pdf;base64,PCFkb2N0eXBlIGh0bWw+CjxodG1sPgogIDxoZWFkPgog ...
 ```
 
+## Ejemplos de interaccion con el backend para modulo de login
+
+
+#### Endpoint : opReq=seguri:acceso:acceso_jwt:ValidateSession
+
+Devuelve el PDF en formato Base64 (Se abre en otra ventana del navegador)
+
+Request:
+```
+fetch("http://localhost/SisnetV3Desarrollo/php/interfase_jwt.php?opReq=seguri:acceso:acceso_jwt:ValidateSession&XDEBUG_SESSION_START=XDEBUG_ECLIPSE", {
+  "headers": {
+    "accept": "application/json",
+    "accept-language": "en-US,en;q=0.9",
+    "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c3VhcmlvIjoiZGVtbyIsImNvbnRyYXNlbmEiOiIiLCJzdWN1cnNhbCI6IkRFTU98TUFUUklafDQzIiwiaW5zdGFuY2lhIjoiNDMiLCJlbXByZXNhIjoiREVNTyIsInN1YiI6ImRlbW8iLCJzdGFydCI6IjIwMjYtMDQtMTYgMDA6NDg6NTAiLCJlbmQiOiIyMDI2LTA0LTE2IDA0OjQ4OjUwIiwidGltZXN0YW1wIjoxNzc2MzE4NTMwLCJpYXQiOjE3NzYzMTg1MzAsImV4cCI6MTc3NjMzMjkzMCwiZXhwaXJlc0luIjoiNCBob3VyIn0.qja5j7mxJzwu8glsN3FZ0lt7WgzWCggO49KNc9GrcWU",
+    "cache-control": "no-cache",
+    "content-type": "application/json",
+    "pragma": "no-cache"
+  },
+  "referrer": "http://localhost:3000/",
+  "body": "{\"session\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c3VhcmlvIjoiZGVtbyIsImNvbnRyYXNlbmEiOiIiLCJzdWN1cnNhbCI6IkRFTU98TUFUUklafDQzIiwiaW5zdGFuY2lhIjoiNDMiLCJlbXByZXNhIjoiREVNTyIsInN1YiI6ImRlbW8iLCJzdGFydCI6IjIwMjYtMDQtMTYgMDA6NDg6NTAiLCJlbmQiOiIyMDI2LTA0LTE2IDA0OjQ4OjUwIiwidGltZXN0YW1wIjoxNzc2MzE4NTMwLCJpYXQiOjE3NzYzMTg1MzAsImV4cCI6MTc3NjMzMjkzMCwiZXhwaXJlc0luIjoiNCBob3VyIn0.qja5j7mxJzwu8glsN3FZ0lt7WgzWCggO49KNc9GrcWU\",\"MyApp\":\"SisnetV3\"}",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+```
+  
+Response:
+```
+{
+    "success": true,
+    "session": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c3VhcmlvIjoiZGVtbyIsImNvbnRyYXNlbmEiOiIiLCJzdWN1cnNhbCI6IkRFTU98TUFUUklafDQzIiwiaW5zdGFuY2lhIjoiNDMiLCJlbXByZXNhIjoiREVNTyIsInN1YiI6ImRlbW8iLCJzdGFydCI6IjIwMjYtMDQtMTYgMDA6NDk6MzEiLCJlbmQiOiIyMDI2LTA0LTE2IDA0OjQ5OjMxIiwidGltZXN0YW1wIjoxNzc2MzE4NTcxLCJpYXQiOjE3NzYzMTg1NzEsImV4cCI6MTc3NjMzMjk3MSwiZXhwaXJlc0luIjoiNCBob3VyIn0.8tCwMT_nl9s5sTixp5TY5qKWacX2DNocHUlAqgoPork",
+    "usuario": "Demo",
+    "empresa": "ESCUELA KEMPER URGATE SA DE CV",
+    "sucursal": "ACCEM SERVICIOS EMPRESARIALES SC",
+    "serviceToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c3VhcmlvIjoiZGVtbyIsImNvbnRyYXNlbmEiOiIiLCJzdWN1cnNhbCI6IkRFTU98TUFUUklafDQzIiwiaW5zdGFuY2lhIjoiNDMiLCJlbXByZXNhIjoiREVNTyIsInN1YiI6ImRlbW8iLCJzdGFydCI6IjIwMjYtMDQtMTYgMDA6NDk6MzEiLCJlbmQiOiIyMDI2LTA0LTE2IDA0OjQ5OjMxIiwidGltZXN0YW1wIjoxNzc2MzE4NTcxLCJpYXQiOjE3NzYzMTg1NzEsImV4cCI6MTc3NjMzMjk3MSwiZXhwaXJlc0luIjoiNCBob3VyIn0.8tCwMT_nl9s5sTixp5TY5qKWacX2DNocHUlAqgoPork",
+    "expiresAt": "2026-04-16 04:49:31",
+    "user": {
+        "id": "demo",
+        "email": "demo@demo.com",
+        "name": "Demo",
+        "company": "ESCUELA KEMPER URGATE SA DE CV",
+        "office": "ACCEM SERVICIOS EMPRESARIALES SC",
+        "permissionMatrix": [
+            {
+                "programa_id": "CRM_CUSTOMERS",
+                "descripcion": "CRM Clientes",
+                "accion": "create"
+            },
+            {
+                "programa_id": "CRM_CUSTOMERS",
+                "descripcion": "CRM Clientes",
+                "accion": "export"
+            },
+            {
+                "programa_id": "CRM_CUSTOMERS",
+                "descripcion": "CRM Clientes",
+                "accion": "import"
+            },
+            {
+                "programa_id": "CRM_CUSTOMERS",
+                "descripcion": "CRM Clientes",
+                "accion": "read"
+            },
+            {
+                "programa_id": "CRM_CUSTOMERS",
+                "descripcion": "CRM Clientes",
+                "accion": "segmentation"
+            },
+            {
+                "programa_id": "CRM_DASHBOARD",
+                "descripcion": "CRM Dashboard",
+                "accion": "read"
+            },
+            {
+                "programa_id": "CRM_KNOWLEDGE_BASE",
+                "descripcion": "CRM Knowledge",
+                "accion": "manage"
+            },
+            {
+                "programa_id": "CRM_LEADS",
+                "descripcion": "CRM Leads",
+                "accion": "convert"
+            },
+            {
+                "programa_id": "CRM_LEADS",
+                "descripcion": "CRM Leads",
+                "accion": "create"
+            },
+            {
+                "programa_id": "CRM_LEADS",
+                "descripcion": "CRM Leads",
+                "accion": "delete"
+            },
+            {
+                "programa_id": "CRM_LEADS",
+                "descripcion": "CRM Leads",
+                "accion": "read"
+            },
+            {
+                "programa_id": "CRM_LEADS",
+                "descripcion": "CRM Leads",
+                "accion": "update"
+            },
+            {
+                "programa_id": "CRM_OPPORTUNITIES",
+                "descripcion": "CRM Opportunities",
+                "accion": "create"
+            },
+            {
+                "programa_id": "CRM_OPPORTUNITIES",
+                "descripcion": "CRM Opportunities",
+                "accion": "delete"
+            },
+            {
+                "programa_id": "CRM_OPPORTUNITIES",
+                "descripcion": "CRM Opportunities",
+                "accion": "read"
+            },
+            {
+                "programa_id": "CRM_OPPORTUNITIES",
+                "descripcion": "CRM Opportunities",
+                "accion": "share"
+            },
+            {
+                "programa_id": "CRM_OPPORTUNITIES",
+                "descripcion": "CRM Opportunities",
+                "accion": "update"
+            },
+            {
+                "programa_id": "CRM_QUOTES",
+                "descripcion": "CRM Quotes",
+                "accion": "create"
+            },
+            {
+                "programa_id": "CRM_QUOTES",
+                "descripcion": "CRM Quotes",
+                "accion": "delete"
+            },
+            {
+                "programa_id": "CRM_QUOTES",
+                "descripcion": "CRM Quotes",
+                "accion": "read"
+            },
+            {
+                "programa_id": "CRM_QUOTES",
+                "descripcion": "CRM Quotes",
+                "accion": "update"
+            },
+            {
+                "programa_id": "CRM_REPORTS",
+                "descripcion": "CRM Reports",
+                "accion": "create"
+            },
+            {
+                "programa_id": "CRM_REPORTS",
+                "descripcion": "CRM Reports",
+                "accion": "export"
+            },
+            {
+                "programa_id": "CRM_REPORTS",
+                "descripcion": "CRM Reports",
+                "accion": "read"
+            },
+            {
+                "programa_id": "CRM_REPORTS",
+                "descripcion": "CRM Reports",
+                "accion": "view_all"
+            },
+            {
+                "programa_id": "CRM_SALES_FLOWS",
+                "descripcion": "CRM Config Flujos",
+                "accion": "convert"
+            },
+            {
+                "programa_id": "CRM_SALES_FLOWS",
+                "descripcion": "CRM Config Flujos",
+                "accion": "create"
+            },
+            {
+                "programa_id": "CRM_SALES_FLOWS",
+                "descripcion": "CRM Config Flujos",
+                "accion": "delete"
+            },
+            {
+                "programa_id": "CRM_SALES_FLOWS",
+                "descripcion": "CRM Config Flujos",
+                "accion": "read"
+            },
+            {
+                "programa_id": "CRM_SALES_FLOWS",
+                "descripcion": "CRM Config Flujos",
+                "accion": "update"
+            }
+        ],
+        "roles": [
+            {
+                "rol_id": "crm_sales"
+            }
+        ]
+    }
+}
+```

@@ -6,7 +6,8 @@
       "Bash(npm run:*)",
       "Bash(npx tsc:*)",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(npx sharp-cli:*)"
+      "Bash(npx sharp-cli:*)",
+      "Bash(npx eslint *)"
     ],
     "additionalDirectories": [
       "C:/wamp/www/SisnetV3Desarrollo"

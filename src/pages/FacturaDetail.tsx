@@ -26,7 +26,8 @@ import { ProductoPickerInline, type ProductoPickerInlineHandle } from "@/modules
 import { ConceptoSheet } from "@/modules/facturacion/ConceptoSheet";
 import { CancelDialog } from "@/modules/facturacion/CancelDialog";
 import { MailDialog } from "@/modules/facturacion/MailDialog";
-import { PdfSheet, PDF_SHEET_CLOSED, type PdfSheetState } from "@/modules/facturacion/PdfSheet";
+import { PdfSheet } from "@/modules/facturacion/PdfSheet";
+import { PDF_SHEET_CLOSED, type PdfSheetState } from "@/modules/facturacion/pdfSheetState";
 
 export default function FacturaDetail() {
   const { serie, folio } = useParams<{ serie: string; folio: string }>();
