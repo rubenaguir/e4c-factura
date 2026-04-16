@@ -38,7 +38,6 @@ import type { Direccion } from "@/api/endpoints/clientes";
 
 // ── LOV constants ────────────────────────────────────────────────────────────
 const LOV_REGIMEN = "sistema:empresas:empresas:SearchRegimenesSAT";
-const LOV_METODO_PAGO = "Sistem:Lov:Lov:LoadLovFieldMetodosPagoSat33";
 
 // ── Zod schema ───────────────────────────────────────────────────────────────
 const clienteSchema = z.object({
@@ -205,12 +204,6 @@ export default function ClienteDetail() {
     LOV_REGIMEN,
     "regimen_fiscal_id",
     "regimen"
-  );
-  const { options: metodoPagoOpts } = useLov(
-    LOV_METODO_PAGO,
-    "clave",
-    "descripcion",
-    { aplica_cfdi: "S" }
   );
 
   // Main form
@@ -432,7 +425,6 @@ export default function ClienteDetail() {
 
   // ── Render helpers ────────────────────────────────────────────────────────
   const regimenSelected = watch("regimen_fiscal_id");
-  const metodoPagoSelected = watch("metodo_de_pago");
   const estatusSelected = watch("estatus");
 
   if (loadingRecord) {
