@@ -147,6 +147,7 @@ export interface FacturaCompleta {
   centro_utilidad_id: string | null;
   centro_costo_id: string | null;
   regimen_fiscal_id: string;
+  receptor_regimen_fiscal_id: string;
   cancelacion_estatus: string | null;
   estatus_sat: string | null;
   // Sólo en respuestas de mutación:

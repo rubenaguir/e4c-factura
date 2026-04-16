@@ -8,20 +8,23 @@ import { ProductosProvider } from "./context/ProductosContext.tsx";
 import { CatalogosProvider } from "./context/CatalogosContext.tsx";
 import { FacturasProvider } from "./context/FacturasContext.tsx";
 import PwaUpdateBanner from "./components/PwaUpdateBanner.tsx";
+import { SnackbarProvider } from "./context/SnackbarContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
-      <CatalogosProvider>
-        <ClientesProvider>
-          <ProductosProvider>
-            <FacturasProvider>
-              <App />
-              <PwaUpdateBanner />
-            </FacturasProvider>
-          </ProductosProvider>
-        </ClientesProvider>
-      </CatalogosProvider>
+      <SnackbarProvider>
+        <CatalogosProvider>
+          <ClientesProvider>
+            <ProductosProvider>
+              <FacturasProvider>
+                <App />
+                <PwaUpdateBanner />
+              </FacturasProvider>
+            </ProductosProvider>
+          </ClientesProvider>
+        </CatalogosProvider>
+      </SnackbarProvider>
     </AuthProvider>
   </StrictMode>
 );

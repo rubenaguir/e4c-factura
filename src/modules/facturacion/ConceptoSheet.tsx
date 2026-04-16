@@ -43,7 +43,7 @@ export function ConceptoSheet({ concepto, onSave, onClose }: ConceptoSheetProps)
 
   const removeImp = (arr: DraftImpuesto[], key: string) => arr.filter(i => i._key !== key);
 
-  const priceLists = c.precios.map(p => ({ id: p[0], precio: p[1], moneda: p[2] }));
+  const priceLists = (c.precios ?? []).map(p => ({ id: p[0], precio: p[1], moneda: p[2] }));
   const showListaPicker = priceLists.length > 1;
 
   return (

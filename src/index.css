@@ -89,6 +89,16 @@
   }
 }
 
+/* ── Encabezado de sección (CLIENTE, COMPROBANTE, CONCEPTOS…)
+   Definido fuera de @layer para mayor especificidad garantizada ────────────── */
+.section-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+}
+
 /* ── Gradiente de marca reutilizable ──────────────────────────────────────── */
 @layer utilities {
   .brand-gradient {

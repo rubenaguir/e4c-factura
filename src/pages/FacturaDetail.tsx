@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, ChevronDown, ChevronUp,
-  Loader2, FileText, Mail, MoreHorizontal, X,
+  Loader2, FileText, Mail, MoreHorizontal,
 } from "lucide-react";
 import { useFacturas } from "@/context/FacturasContext";
 import { useCatalogos } from "@/context/CatalogosContext";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +38,7 @@ export default function FacturaDetail() {
   const { empresaId } = useAuth();
 
   const isNew = !serie && !folio;
+  const { showError, showSuccess } = useSnackbar();
 
   const [draft, setDraft] = useState<FacturaDraft>(newDraft);
   const [loadingFact, setLoadingFact] = useState(!isNew);
@@ -46,8 +48,6 @@ export default function FacturaDetail() {
   const [divisaOpen, setDivisaOpen] = useState(false);
 
   const [saving, setSaving] = useState(false);
-  const [saveErr, setSaveErr] = useState<string | null>(null);
-  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const [editConcepto, setEditConcepto] = useState<{ c: DraftConcepto; idx: number } | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -140,9 +140,9 @@ export default function FacturaDetail() {
   // ── Save / stamp ────────────────────────────────────────────────────────────
 
   const doSave = async (action: "prefactura" | "timbrar") => {
-    if (!draft.clienteId) { setSaveErr("Selecciona un cliente"); return; }
-    if (draft.conceptos.length === 0) { setSaveErr("Agrega al menos un concepto"); return; }
-    setSaving(true); setSaveErr(null); setSaveMsg(null);
+    if (!draft.clienteId) { showError("Selecciona un cliente"); return; }
+    if (draft.conceptos.length === 0) { showError("Agrega al menos un concepto"); return; }
+    setSaving(true);
     const payload = buildPayload(draft);
     try {
       let res: { msg: string; record: FacturaCompleta };
@@ -151,10 +151,10 @@ export default function FacturaDetail() {
       } else {
         res = isNew ? await addFactura(payload) : await stamp(payload);
       }
-      setSaveMsg(res.msg);
+      showSuccess(res.msg);
       navigate(`/facturas/${res.record.serie}/${res.record.folio}`, { replace: true });
     } catch (e) {
-      setSaveErr(e instanceof Error ? e.message : String(e));
+      showError(e instanceof Error ? e.message : String(e));
     } finally { setSaving(false); }
   };
 
@@ -163,11 +163,11 @@ export default function FacturaDetail() {
     setCancelSaving(true);
     try {
       const res = await cancel(serie, folio, motivo, folioSustituto);
-      setSaveMsg(res.msg);
+      showSuccess(res.msg);
       setCancelOpen(false);
       loadOne(serie, folio).catch(() => null);
     } catch (e) {
-      setSaveErr(e instanceof Error ? e.message : String(e));
+      showError(e instanceof Error ? e.message : String(e));
       setCancelOpen(false);
     } finally { setCancelSaving(false); }
   };
@@ -179,7 +179,7 @@ export default function FacturaDetail() {
       const data = await printPdf(empresaId ?? "", draft.serie, draft.folio, "");
       window.open(data, "_blank");
     } catch (e) {
-      setSaveErr(e instanceof Error ? e.message : String(e));
+      showError(e instanceof Error ? e.message : String(e));
     } finally { setPdfLoading(false); }
   };
 
@@ -255,25 +255,10 @@ export default function FacturaDetail() {
       <div className="flex-1 overflow-auto pb-32 md:pb-20">
         <div className="max-w-2xl mx-auto p-4 space-y-4">
 
-          {/* Messages */}
-          {saveErr && (
-            <Alert variant="destructive">
-              <AlertDescription className="flex items-start gap-2">
-                {saveErr}
-                <button type="button" onClick={() => setSaveErr(null)} className="ml-auto shrink-0"><X className="h-4 w-4" /></button>
-              </AlertDescription>
-            </Alert>
-          )}
-          {saveMsg && (
-            <Alert>
-              <AlertDescription className="text-green-700">{saveMsg}</AlertDescription>
-            </Alert>
-          )}
-
           {/* ── CLIENTE ── */}
-          <section className="border rounded-lg">
-            <div className="bg-muted/40 px-3 py-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cliente</p>
+          <section className="border rounded-lg overflow-hidden">
+            <div className="bg-primary/70 px-3 py-2">
+              <p className="section-heading">Cliente</p>
             </div>
             <div className="p-3 space-y-3">
               <ClientePickerInline
@@ -321,10 +306,10 @@ export default function FacturaDetail() {
           {/* ── COMPROBANTE ── */}
           <section className="border rounded-lg overflow-hidden">
             <button type="button"
-              className="w-full flex items-center justify-between bg-muted/40 px-3 py-2"
+              className="w-full flex items-center justify-between bg-primary/70 px-3 py-2"
               onClick={() => setComprobantOpen(o => !o)}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Comprobante</p>
-              {comprobantOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              <p className="section-heading">Comprobante</p>
+              {comprobantOpen ? <ChevronUp className="h-4 w-4 text-white" /> : <ChevronDown className="h-4 w-4 text-white" />}
             </button>
             {comprobantOpen && (
               <div className="p-3 space-y-3">
@@ -361,13 +346,13 @@ export default function FacturaDetail() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label className="text-xs">Fecha</Label>
+                    <Label className="text-xs pr-2">Fecha</Label>
                     {!isReadOnly
                       ? <DateInput className="h-8 text-sm" value={draft.fecha} onChange={v => setDraftField("fecha", v)} />
                       : <p className="text-sm">{draft.fecha}</p>}
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Vence</Label>
+                    <Label className="text-xs pr-2">Vence</Label>
                     {!isReadOnly
                       ? <DateInput className="h-8 text-sm" value={draft.fechaVencimiento} onChange={v => setDraftField("fechaVencimiento", v)} />
                       : <p className="text-sm">{draft.fechaVencimiento}</p>}
@@ -389,10 +374,17 @@ export default function FacturaDetail() {
 
                 {/* Divisa expandible */}
                 <button type="button"
-                  className="flex items-center gap-1 text-xs text-primary"
+                  className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
                   onClick={() => setDivisaOpen(o => !o)}>
-                  {divisaOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  {divisaOpen ? "Ocultar Divisa / T.C." : "+ Divisa / T.C."}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${divisaOpen ? "rotate-180" : ""}`}
+                  />
+                  Moneda
+                  {draft.monedaId && draft.monedaId !== "MXN" && (
+                    <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      {draft.monedaId}
+                    </span>
+                  )}
                 </button>
                 {divisaOpen && (
                   <div className="grid grid-cols-2 gap-2 border rounded p-2 bg-muted/20">
@@ -427,9 +419,9 @@ export default function FacturaDetail() {
           </section>
 
           {/* ── CONCEPTOS ── */}
-          <section className="border rounded-lg">
-            <div className="bg-muted/40 px-3 py-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Conceptos</p>
+          <section className="border rounded-lg overflow-hidden">
+            <div className="bg-primary/70 px-3 py-2">
+              <p className="section-heading">Conceptos</p>
             </div>
             <div className="divide-y">
               {draft.conceptos.length === 0 && (
@@ -516,8 +508,8 @@ export default function FacturaDetail() {
           {/* ── TOTALES ── */}
           {totales && (
             <section className="border rounded-lg overflow-hidden">
-              <div className="bg-muted/40 px-3 py-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Totales</p>
+              <div className="bg-primary/70 px-3 py-2">
+                <p className="section-heading">Totales</p>
               </div>
               <div className="p-3 space-y-1 text-sm">
                 <div className="flex justify-between">
@@ -543,8 +535,8 @@ export default function FacturaDetail() {
           {/* ── PAGO (solo PUE) ── */}
           {draft.metodoPago === "PUE" && !isReadOnly && (
             <section className="border rounded-lg overflow-hidden">
-              <div className="bg-muted/40 px-3 py-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pago integrado (PUE)</p>
+              <div className="bg-primary/70 px-3 py-2">
+                <p className="section-heading">Pago integrado (PUE)</p>
               </div>
               <div className="p-3 space-y-3">
                 <div className="space-y-1">

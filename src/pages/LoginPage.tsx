@@ -9,7 +9,7 @@ import type { SucursalOption } from "@/api/endpoints/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // ── Paso 1: credenciales ────────────────────────────────────────────────────
@@ -30,10 +30,10 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { getSucursales, login } = useAuth();
 
+  const { showError } = useSnackbar();
   const [step, setStep] = useState<1 | 2>(1);
   const [sucursales, setSucursales] = useState<SucursalOption[]>([]);
   const [credenciales, setCredenciales] = useState<Step1Values | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // ── Formulario paso 1 ────────────────────────────────────────────────────
@@ -43,12 +43,11 @@ export default function LoginPage() {
   });
 
   const onStep1Submit = async (values: Step1Values) => {
-    setError(null);
     setLoading(true);
     try {
       const opciones = await getSucursales(values.usuario, values.contrasena);
       if (opciones.length === 0) {
-        setError("No hay empresas/sucursales disponibles para este usuario.");
+        showError("No hay empresas/sucursales disponibles para este usuario.");
         return;
       }
       if (opciones.length === 1) {
@@ -61,7 +60,7 @@ export default function LoginPage() {
       setSucursales(opciones);
       setStep(2);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido");
+      showError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setLoading(false);
     }
@@ -75,13 +74,12 @@ export default function LoginPage() {
 
   const onStep2Submit = async (values: Step2Values) => {
     if (!credenciales) return;
-    setError(null);
     setLoading(true);
     try {
       await login(credenciales.usuario, credenciales.contrasena, values.empresaId, values.sucursalId);
       navigate("/", { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error desconocido");
+      showError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setLoading(false);
     }
@@ -94,7 +92,6 @@ export default function LoginPage() {
 
   const volverAPaso1 = () => {
     setStep(1);
-    setError(null);
     setSucursales([]);
     setCredenciales(null);
   };
@@ -117,12 +114,6 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           {/* ── Paso 1 ── */}
           {step === 1 && (
             <form onSubmit={form1.handleSubmit(onStep1Submit)} className="space-y-4">

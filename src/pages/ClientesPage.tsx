@@ -1,11 +1,34 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+
+// ── Avatar helpers ────────────────────────────────────────────────────────────
+const AVATAR_COLORS = [
+  "bg-primary text-primary-foreground",
+  "bg-secondary text-secondary-foreground",
+  "bg-violet-500 text-white",
+  "bg-orange-500 text-white",
+  "bg-rose-500 text-white",
+  "bg-amber-500 text-white",
+];
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function avatarColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
 import { useClientes } from "@/context/ClientesContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -20,6 +43,7 @@ export default function ClientesPage() {
   const navigate = useNavigate();
   const { state, pageSize, search, setSelected } = useClientes();
   const { list, totalCount, loading, error, stale, page, filters } = state;
+  const { showError } = useSnackbar();
 
   const [nombre, setNombre] = useState(filters.nombre ?? "");
   const [rfc, setRfc] = useState(filters.rfc ?? "");
@@ -32,6 +56,10 @@ export default function ClientesPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stale]);
+
+  useEffect(() => {
+    if (error) showError(error);
+  }, [error]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -96,25 +124,17 @@ export default function ClientesPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {error && (
-          <div className="p-4">
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
-        )}
-
         {/* Desktop table */}
         <div className="hidden md:block">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 sticky top-0">
+            <thead className="bg-primary/70 sticky top-0">
               <tr>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">RFC</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Nombre</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">CP</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Estado</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Estatus</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Actualización</th>
+                <th className="text-left px-4 py-2 font-medium text-white">RFC</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Nombre</th>
+                <th className="text-left px-4 py-2 font-medium text-white">CP</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Estado</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Estatus</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Actualización</th>
               </tr>
             </thead>
             <tbody>
@@ -137,11 +157,11 @@ export default function ClientesPage() {
                 </tr>
               )}
               {!loading &&
-                list.map((row) => (
+                list.map((row, i) => (
                   <tr
                     key={row.cliente_id}
                     onClick={() => handleRowClick(row)}
-                    className="border-b hover:bg-muted/40 cursor-pointer transition-colors"
+                    className={["border-b cursor-pointer transition-colors hover:bg-primary/8", i % 2 === 1 ? "bg-muted/20" : ""].join(" ")}
                   >
                     <td className="px-4 py-2 font-mono text-xs">{row.rfc}</td>
                     <td className="px-4 py-2">{row.nombre}</td>
@@ -172,29 +192,34 @@ export default function ClientesPage() {
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">Sin resultados</p>
           )}
           {!loading &&
-            list.map((row) => (
+            list.map((row, i) => (
               <button
                 key={row.cliente_id}
                 type="button"
                 onClick={() => handleRowClick(row)}
-                className="w-full text-left px-4 py-3 hover:bg-muted/40 transition-colors"
+                className={["w-full text-left px-4 py-3 transition-colors hover:bg-primary/8", i % 2 === 1 ? "bg-muted/20" : ""].join(" ")}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{row.nombre}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{row.rfc}</p>
-                    {(row.codigo_postal || row.estado) && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {[row.codigo_postal, row.estado].filter(Boolean).join(" · ")}
-                      </p>
-                    )}
+                <div className="flex items-center gap-3">
+                  <div className={["h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0", avatarColor(row.nombre)].join(" ")}>
+                    {getInitials(row.nombre)}
                   </div>
-                  <Badge
-                    variant={row.estatus === "A" ? "default" : "secondary"}
-                    className="shrink-0 text-xs"
-                  >
-                    {row.estatus === "A" ? "Activo" : "Inact."}
-                  </Badge>
+                  <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{row.nombre}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{row.rfc}</p>
+                      {(row.codigo_postal || row.estado) && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {[row.codigo_postal, row.estado].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+                    </div>
+                    <Badge
+                      variant={row.estatus === "A" ? "default" : "secondary"}
+                      className="shrink-0 text-xs"
+                    >
+                      {row.estatus === "A" ? "Activo" : "Inact."}
+                    </Badge>
+                  </div>
                 </div>
               </button>
             ))}

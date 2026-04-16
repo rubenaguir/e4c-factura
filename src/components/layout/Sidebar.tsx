@@ -19,16 +19,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         collapsed ? "w-[60px]" : "w-[240px]"
       )}
     >
-      {/* Logo */}
-      <div className={cn("flex items-center gap-3 h-14 px-3 border-b", collapsed && "justify-center")}>
-        <div className="h-8 w-8 rounded-lg brand-gradient flex items-center justify-center shrink-0 shadow-sm">
-          <span className="text-white font-bold text-xs">E4</span>
-        </div>
-        {!collapsed && (
-          <span className="font-semibold text-sm truncate">E4C Facturación</span>
-        )}
-      </div>
-
       {/* Nav */}
       <nav className="flex-1 py-3 space-y-1 px-2 overflow-hidden">
         {navItems.map(({ to, label, icon: Icon }) => (

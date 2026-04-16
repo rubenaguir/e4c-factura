@@ -6,7 +6,7 @@ import type { SkuLov } from "@/api/endpoints/facturas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InlineModal } from "./InlineModal";
 import { conceptoFromSku } from "./facturaMappers";
@@ -29,8 +29,8 @@ export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onA
     sku: "", descripcion: "", unidad_id: "PZ",
     clave_prod_ser_sat: "", almacenable: "S", esquema_impuestos_id: "GENERAL",
   });
+  const { showError } = useSnackbar();
   const [addSaving, setAddSaving] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
   const debRef = useRef<number | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -65,9 +65,9 @@ export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onA
 
   const handleInlineAdd = async () => {
     if (!addForm.sku || !addForm.descripcion || !addForm.unidad_id || !addForm.clave_prod_ser_sat) {
-      setAddError("SKU, descripción, unidad y clave SAT son requeridos"); return;
+      showError("SKU, descripción, unidad y clave SAT son requeridos"); return;
     }
-    setAddSaving(true); setAddError(null);
+    setAddSaving(true);
     try {
       await addProducto({
         sku: addForm.sku, descripcion: addForm.descripcion,
@@ -87,7 +87,7 @@ export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onA
       setAddForm({ sku: "", descripcion: "", unidad_id: "PZ", clave_prod_ser_sat: "", almacenable: "S", esquema_impuestos_id: "GENERAL" });
       setQuery(""); setShowDrop(false);
     } catch (e) {
-      setAddError(e instanceof Error ? e.message : String(e));
+      showError(e instanceof Error ? e.message : String(e));
     } finally { setAddSaving(false); }
   };
 
@@ -135,9 +135,8 @@ export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onA
           </button>
         </div>
       )}
-      <InlineModal open={addOpen} onClose={() => { setAddOpen(false); setAddError(null); }} title="Nuevo producto">
+      <InlineModal open={addOpen} onClose={() => setAddOpen(false)} title="Nuevo producto">
         <div className="space-y-3">
-          {addError && <Alert variant="destructive"><AlertDescription>{addError}</AlertDescription></Alert>}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1 col-span-2">
               <Label>SKU *</Label>
@@ -171,7 +170,7 @@ export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onA
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => { setAddOpen(false); setAddError(null); }} disabled={addSaving}>Cancelar</Button>
+            <Button variant="outline" className="flex-1" onClick={() => setAddOpen(false)} disabled={addSaving}>Cancelar</Button>
             <Button className="flex-1" onClick={handleInlineAdd} disabled={addSaving}>
               {addSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}Guardar
             </Button>

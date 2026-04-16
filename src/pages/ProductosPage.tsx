@@ -6,7 +6,7 @@ import { useProductos } from "@/context/ProductosContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -23,6 +23,7 @@ export default function ProductosPage() {
   const navigate = useNavigate();
   const { state, pageSize, search, setSelected } = useProductos();
   const { list, totalCount, loading, error, stale, page, filters } = state;
+  const { showError } = useSnackbar();
 
   const [descripcion, setDescripcion] = useState(filters.descripcion ?? "");
   const [sku, setSku] = useState(filters.sku ?? "");
@@ -35,6 +36,10 @@ export default function ProductosPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stale]);
+
+  useEffect(() => {
+    if (error) showError(error);
+  }, [error]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Search-as-you-type — debounce lives in context
   const isFirstRender = useRef(true);
@@ -119,21 +124,13 @@ export default function ProductosPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {error && (
-          <div className="p-4 shrink-0">
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
-        )}
-
         {/* Desktop sticky header */}
-        <div className="hidden md:flex shrink-0 border-b bg-muted/50 text-sm">
-          <div className="px-4 py-2 w-40 font-medium text-muted-foreground">SKU</div>
-          <div className="px-4 py-2 flex-1 font-medium text-muted-foreground">Descripción</div>
-          <div className="px-4 py-2 w-20 font-medium text-muted-foreground">Unidad</div>
-          <div className="px-4 py-2 w-24 font-medium text-muted-foreground">Estatus</div>
-          <div className="px-4 py-2 w-40 font-medium text-muted-foreground">Actualización</div>
+        <div className="hidden md:flex shrink-0 bg-primary/70 text-sm">
+          <div className="px-4 py-2 w-40 font-medium text-white">SKU</div>
+          <div className="px-4 py-2 flex-1 font-medium text-white">Descripción</div>
+          <div className="px-4 py-2 w-20 font-medium text-white">Unidad</div>
+          <div className="px-4 py-2 w-24 font-medium text-white">Estatus</div>
+          <div className="px-4 py-2 w-40 font-medium text-white">Actualización</div>
         </div>
 
         {/* Skeleton */}
@@ -169,7 +166,7 @@ export default function ProductosPage() {
                   <div
                     key={row.sku}
                     onClick={() => handleRowClick(row)}
-                    className="absolute w-full flex items-center border-b hover:bg-muted/40 cursor-pointer transition-colors"
+                    className={["absolute w-full flex items-center border-b cursor-pointer transition-colors hover:bg-primary/8", vRow.index % 2 === 1 ? "bg-muted/20" : ""].join(" ")}
                     style={{ top: vRow.start, height: vRow.size }}
                   >
                     {/* Desktop layout */}

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import {
@@ -85,7 +85,6 @@ interface MailDialogState {
   asunto: string;
   loading: boolean;
   sent: boolean;
-  error: string | null;
 }
 
 const MAIL_CLOSED: MailDialogState = {
@@ -96,7 +95,6 @@ const MAIL_CLOSED: MailDialogState = {
   asunto: "",
   loading: false,
   sent: false,
-  error: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -119,8 +117,13 @@ export default function FacturasPage() {
   const [estatus, setEstatus] = useState("*");
 
   // Actions
+  const { showError } = useSnackbar();
   const [pdfLoading, setPdfLoading] = useState<string | null>(null); // "serie-folio"
   const [mail, setMail] = useState<MailDialogState>(MAIL_CLOSED);
+
+  useEffect(() => {
+    if (error) showError(error);
+  }, [error]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initial load / stale reload
   useEffect(() => {
@@ -186,7 +189,6 @@ export default function FacturasPage() {
       asunto: `Factura ${row.serie}-${row.folio}`,
       loading: false,
       sent: false,
-      error: null,
     });
   };
 
@@ -205,11 +207,8 @@ export default function FacturasPage() {
       setTimeout(() => setMail(MAIL_CLOSED), 1500);
       void res;
     } catch (err) {
-      setMail((m) => ({
-        ...m,
-        loading: false,
-        error: err instanceof Error ? err.message : String(err),
-      }));
+      showError(err instanceof Error ? err.message : String(err));
+      setMail((m) => ({ ...m, loading: false }));
     }
   };
 
@@ -307,25 +306,17 @@ export default function FacturasPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {error && (
-          <div className="p-4">
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
-        )}
-
         {/* Desktop table */}
         <div className="hidden md:block">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 sticky top-0">
+            <thead className="bg-primary/70 sticky top-0">
               <tr>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Fecha</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Serie/Folio</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">RFC</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Nombre</th>
-                <th className="text-right px-4 py-2 font-medium text-muted-foreground">Total</th>
-                <th className="text-left px-4 py-2 font-medium text-muted-foreground">Estatus</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Fecha</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Serie/Folio</th>
+                <th className="text-left px-4 py-2 font-medium text-white">RFC</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Nombre</th>
+                <th className="text-right px-4 py-2 font-medium text-white">Total</th>
+                <th className="text-left px-4 py-2 font-medium text-white">Estatus</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -350,13 +341,13 @@ export default function FacturasPage() {
                 </tr>
               )}
               {!loading &&
-                list.map((row) => {
+                list.map((row, i) => {
                   const key = `${row.serie}-${row.folio}`;
                   return (
                     <tr
                       key={key}
                       onClick={() => handleRowClick(row)}
-                      className="border-b hover:bg-muted/40 cursor-pointer transition-colors"
+                      className={["border-b cursor-pointer transition-colors hover:bg-primary/8", i % 2 === 1 ? "bg-muted/20" : ""].join(" ")}
                     >
                       <td className="px-4 py-2 text-muted-foreground">{row.fecha}</td>
                       <td className="px-4 py-2 font-mono text-xs">
@@ -431,12 +422,12 @@ export default function FacturasPage() {
             </p>
           )}
           {!loading &&
-            list.map((row) => {
+            list.map((row, i) => {
               const key = `${row.serie}-${row.folio}`;
               return (
                 <div
                   key={key}
-                  className="px-4 py-3 hover:bg-muted/40 transition-colors"
+                  className={["px-4 py-3 transition-colors hover:bg-primary/8", i % 2 === 1 ? "bg-muted/20" : ""].join(" ")}
                 >
                   <button
                     type="button"
@@ -544,11 +535,6 @@ export default function FacturasPage() {
           <div className="space-y-3 py-2">
             {mail.sent && (
               <p className="text-sm text-green-600 font-medium">Correo enviado.</p>
-            )}
-            {mail.error && (
-              <Alert variant="destructive">
-                <AlertDescription>{mail.error}</AlertDescription>
-              </Alert>
             )}
             <div className="space-y-1">
               <Label htmlFor="mail-nombre">Nombre</Label>

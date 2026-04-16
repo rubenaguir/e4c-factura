@@ -40,7 +40,7 @@ export function DateInput({ value, onChange, className, disabled, id }: DateInpu
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     // Eliminar todo lo que no sea dígito o /
-    let raw = e.target.value.replace(/[^\d/]/g, "");
+    const raw = e.target.value.replace(/[^\d/]/g, "");
 
     // Auto-insertar "/" en posición 2 y 5
     const digits = raw.replace(/\//g, "");

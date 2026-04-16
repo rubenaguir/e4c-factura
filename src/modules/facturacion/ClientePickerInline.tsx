@@ -7,7 +7,7 @@ import type { ClienteLov, FacturaCompleta } from "@/api/endpoints/facturas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InlineModal } from "./InlineModal";
 
@@ -44,8 +44,8 @@ export function ClientePickerInline({
   const [searching, setSearching] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({ nombre: "", rfc: "", codigo_postal: "", regimen_fiscal_id: "" });
+  const { showError } = useSnackbar();
   const [addSaving, setAddSaving] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
   const debRef = useRef<number | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -78,9 +78,9 @@ export function ClientePickerInline({
 
   const handleInlineAdd = async () => {
     if (!addForm.nombre || !addForm.rfc || !addForm.codigo_postal || !addForm.regimen_fiscal_id) {
-      setAddError("Todos los campos marcados con * son requeridos"); return;
+      showError("Todos los campos marcados con * son requeridos"); return;
     }
-    setAddSaving(true); setAddError(null);
+    setAddSaving(true);
     try {
       const res = await addCliente({
         nombre: addForm.nombre, rfc: addForm.rfc.toUpperCase(),
@@ -101,7 +101,7 @@ export function ClientePickerInline({
       setAddForm({ nombre: "", rfc: "", codigo_postal: "", regimen_fiscal_id: "" });
       await handleSelectId(res.record.cliente_id);
     } catch (e) {
-      setAddError(e instanceof Error ? e.message : String(e));
+      showError(e instanceof Error ? e.message : String(e));
     } finally { setAddSaving(false); }
   };
 
@@ -164,9 +164,8 @@ export function ClientePickerInline({
           </button>
         </div>
       )}
-      <InlineModal open={addOpen} onClose={() => { setAddOpen(false); setAddError(null); }} title="Nuevo cliente">
+      <InlineModal open={addOpen} onClose={() => setAddOpen(false)} title="Nuevo cliente">
         <div className="space-y-3">
-          {addError && <Alert variant="destructive"><AlertDescription>{addError}</AlertDescription></Alert>}
           <div className="space-y-1">
             <Label>RFC *</Label>
             <Input value={addForm.rfc} onChange={e => setAddForm(p => ({ ...p, rfc: e.target.value.toUpperCase() }))} className="uppercase" />
@@ -189,7 +188,7 @@ export function ClientePickerInline({
             <Input value={addForm.codigo_postal} onChange={e => setAddForm(p => ({ ...p, codigo_postal: e.target.value }))} maxLength={5} />
           </div>
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => { setAddOpen(false); setAddError(null); }} disabled={addSaving}>Cancelar</Button>
+            <Button variant="outline" className="flex-1" onClick={() => setAddOpen(false)} disabled={addSaving}>Cancelar</Button>
             <Button className="flex-1" onClick={handleInlineAdd} disabled={addSaving}>
               {addSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}Guardar
             </Button>

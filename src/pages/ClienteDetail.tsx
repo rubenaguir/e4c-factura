@@ -9,7 +9,6 @@ import {
   MapPin,
   Plus,
   Pencil,
-  CheckCircle2,
 } from "lucide-react";
 import { useClientes } from "@/context/ClientesContext";
 import { useLov } from "@/hooks/useLov";
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -185,9 +185,8 @@ export default function ClienteDetail() {
   const { state, loadOne, add, update, validateCP, searchDirecciones, saveDireccion } =
     useClientes();
 
+  const { showError, showSuccess } = useSnackbar();
   const [tab, setTab] = useState<"generales" | "domicilios">("generales");
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitOk, setSubmitOk] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingRecord, setLoadingRecord] = useState(!isNew);
 
@@ -196,8 +195,6 @@ export default function ClienteDetail() {
   const [loadingDirs, setLoadingDirs] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingDir, setEditingDir] = useState<Direccion | null>(null);
-  const [dirError, setDirError] = useState<string | null>(null);
-  const [dirOk, setDirOk] = useState<string | null>(null);
   const [validatingCP2, setValidatingCP2] = useState(false);
 
   // LOVs
@@ -318,7 +315,7 @@ export default function ClienteDetail() {
       setValue("c_localidad", res.c_localidad, { shouldDirty: true });
       setValue("localidad", res.localidad, { shouldDirty: true });
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : "CP inválido");
+      showError(e instanceof Error ? e.message : "CP inválido");
     } finally {
       setValidatingCP(false);
     }
@@ -326,8 +323,6 @@ export default function ClienteDetail() {
 
   // ── Submit main form ──────────────────────────────────────────────────────
   const onSubmit = async (values: ClienteFormValues) => {
-    setSubmitError(null);
-    setSubmitOk(null);
 
     const payload: Record<string, string> = {
       ...values,
@@ -343,14 +338,14 @@ export default function ClienteDetail() {
     try {
       if (isNew) {
         const { clienteId, msg } = await add(payload);
-        setSubmitOk(msg);
+        showSuccess(msg);
         navigate(`/clientes/${clienteId}`, { replace: true });
       } else {
         const { msg } = await update(id!, payload);
-        setSubmitOk(msg);
+        showSuccess(msg);
       }
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : "Error al guardar");
+      showError(e instanceof Error ? e.message : "Error al guardar");
     }
   };
 
@@ -358,8 +353,6 @@ export default function ClienteDetail() {
   const openNewDir = () => {
     setEditingDir(null);
     dirForm.reset(defaultDireccion);
-    setDirError(null);
-    setDirOk(null);
     setSheetOpen(true);
   };
 
@@ -383,8 +376,6 @@ export default function ClienteDetail() {
       referencia: d.referencia ?? "",
       estatus: d.estatus ?? "A",
     });
-    setDirError(null);
-    setDirOk(null);
     setSheetOpen(true);
   };
 
@@ -402,7 +393,7 @@ export default function ClienteDetail() {
       dirForm.setValue("c_localidad", res.c_localidad, { shouldDirty: true });
       dirForm.setValue("localidad", res.localidad, { shouldDirty: true });
     } catch (e) {
-      setDirError(e instanceof Error ? e.message : "CP inválido");
+      showError(e instanceof Error ? e.message : "CP inválido");
     } finally {
       setValidatingCP2(false);
     }
@@ -410,8 +401,6 @@ export default function ClienteDetail() {
 
   // ── Submit address form ───────────────────────────────────────────────────
   const onDirSubmit = async (values: DireccionFormValues) => {
-    setDirError(null);
-    setDirOk(null);
     try {
       const payload: Record<string, string> = {
         ...values,
@@ -421,7 +410,7 @@ export default function ClienteDetail() {
         ...(editingDir ? { update: "S" } : {}),
       };
       const res = await saveDireccion(payload);
-      setDirOk(res.msg);
+      showSuccess(res.msg);
       // Refresh list
       setDirecciones((prev) => {
         const idx = prev.findIndex((d) => d.direccion_id === res.record.direccion_id);
@@ -434,7 +423,7 @@ export default function ClienteDetail() {
       });
       setTimeout(() => setSheetOpen(false), 800);
     } catch (e) {
-      setDirError(e instanceof Error ? e.message : "Error al guardar");
+      showError(e instanceof Error ? e.message : "Error al guardar");
     }
   };
 
@@ -688,23 +677,6 @@ export default function ClienteDetail() {
             </Field>
           </div>
 
-          {/* Feedback */}
-          {(submitError || submitOk) && (
-            <div className="px-4 pb-2">
-              {submitError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{submitError}</AlertDescription>
-                </Alert>
-              )}
-              {submitOk && (
-                <Alert className="border-green-200 bg-green-50 text-green-800">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription>{submitOk}</AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
-
           {/* Actions */}
           <div className="sticky bottom-0 flex justify-end gap-2 px-4 py-3 border-t bg-background">
             <Button type="button" variant="outline" onClick={() => navigate("/clientes")}>
@@ -900,22 +872,6 @@ export default function ClienteDetail() {
                 </SelectContent>
               </Select>
             </Field>
-
-            {(dirError || dirOk) && (
-              <div className="col-span-2">
-                {dirError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{dirError}</AlertDescription>
-                  </Alert>
-                )}
-                {dirOk && (
-                  <Alert className="border-green-200 bg-green-50 text-green-800">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription>{dirOk}</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
 
             <div className="col-span-2 flex justify-end gap-2 pt-2">
               <Button

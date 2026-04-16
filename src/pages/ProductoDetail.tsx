@@ -6,7 +6,6 @@ import { z } from "zod";
 import {
   ArrowLeft,
   Loader2,
-  CheckCircle2,
   Package,
 } from "lucide-react";
 import { useProductos } from "@/context/ProductosContext";
@@ -15,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSnackbar } from "@/context/useSnackbar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -168,9 +168,8 @@ export default function ProductoDetail() {
 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingRecord, setLoadingRecord] = useState(false);
+  const { showError, showSuccess } = useSnackbar();
   const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { options: unidadOpts, loading: loadingUnidad } = useLov(
     LOV_UNIDAD,
@@ -253,8 +252,6 @@ export default function ProductoDetail() {
 
   const onSubmit = async (values: ProductoFormValues) => {
     setSaving(true);
-    setSaveError(null);
-    setSuccessMsg(null);
     try {
       const payload = Object.fromEntries(
         Object.entries(values).map(([k, v]) => [k, String(v ?? "")])
@@ -262,14 +259,14 @@ export default function ProductoDetail() {
 
       if (isNew) {
         const res = await add(payload);
-        setSuccessMsg(res.msg);
+        showSuccess(res.msg);
         navigate(`/productos/${encodeURIComponent(res.sku)}`, { replace: true });
       } else {
         const res = await update(decodeURIComponent(id!), payload);
-        setSuccessMsg(res.msg);
+        showSuccess(res.msg);
       }
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : String(e));
+      showError(e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }
@@ -339,23 +336,6 @@ export default function ProductoDetail() {
           </Badge>
         )}
       </div>
-
-      {/* Success / Error banners */}
-      {successMsg && (
-        <div className="px-4 pt-3">
-          <Alert>
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription>{successMsg}</AlertDescription>
-          </Alert>
-        </div>
-      )}
-      {saveError && (
-        <div className="px-4 pt-3">
-          <Alert variant="destructive">
-            <AlertDescription>{saveError}</AlertDescription>
-          </Alert>
-        </div>
-      )}
 
       {/* Form */}
       <form
