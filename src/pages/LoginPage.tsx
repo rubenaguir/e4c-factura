@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Fingerprint, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { SucursalOption } from "@/api/endpoints/auth";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ type Step2Values = z.infer<typeof step2Schema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { getSucursales, login } = useAuth();
+  const { getSucursales, login, hasBiometric, loginWithBiometric } = useAuth();
 
   const { showError } = useSnackbar();
   const [step, setStep] = useState<1 | 2>(1);
@@ -89,6 +89,18 @@ export default function LoginPage() {
   const handleSucursalSelect = (s: SucursalOption) => {
     // form2.setValue("empresaId", s.empresa_id);
     form2.setValue("sucursalId", s.empresa_sucursal_id);
+  };
+
+  const handleBiometricLogin = async () => {
+    setLoading(true);
+    try {
+      await loginWithBiometric();
+      navigate("/", { replace: true });
+    } catch (e) {
+      showError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const volverAPaso1 = () => {
@@ -172,6 +184,26 @@ export default function LoginPage() {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Continuar
               </Button>
+
+              {hasBiometric && (
+                <>
+                  <div className="relative flex items-center">
+                    <div className="flex-grow border-t border-border" />
+                    <span className="mx-3 text-xs text-muted-foreground">o</span>
+                    <div className="flex-grow border-t border-border" />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={handleBiometricLogin}
+                    disabled={loading}
+                  >
+                    <Fingerprint className="h-4 w-4" />
+                    Entrar con huella
+                  </Button>
+                </>
+              )}
             </form>
           )}
 

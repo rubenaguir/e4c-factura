@@ -2,6 +2,13 @@ import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { setLogoutHandler } from "@/api/client";
 import { login as apiLogin, searchSucursalesUsuario, validateSession } from "@/api/endpoints/auth";
 import type { SucursalOption } from "@/api/endpoints/auth";
+import { checkSupport, register as biometricRegister, verify as biometricVerify } from "@/lib/biometric";
+import {
+  clear as biometricClear,
+  hasSession as biometricHasSession,
+  load as biometricLoad,
+  save as biometricSave,
+} from "@/lib/biometricStorage";
 
 export interface AuthState {
   token: string | null;
@@ -18,6 +25,16 @@ export interface AuthActions {
   logout: () => void;
   /** Paso 1: obtener sucursales disponibles para el usuario */
   getSucursales: (usuario: string, contrasena: string) => Promise<SucursalOption[]>;
+  /** true si hay sesión biométrica guardada */
+  hasBiometric: boolean;
+  /** true si el dispositivo soporta autenticador de plataforma */
+  biometricSupported: boolean;
+  /** Registra el autenticador y cifra las credenciales actuales */
+  enableBiometric: () => Promise<void>;
+  /** Autentica usando la sesión biométrica guardada (sin paso de sucursal) */
+  loginWithBiometric: () => Promise<void>;
+  /** Elimina la sesión biométrica */
+  disableBiometric: () => void;
 }
 
 export type AuthContextValue = AuthState & AuthActions;
@@ -82,6 +99,8 @@ function remainingMs(token: string): number {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>(readSession);
+  const [hasBiometric, setHasBiometric] = useState(() => biometricHasSession());
+  const [biometricSupported, setBiometricSupported] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Guardamos las sucursales disponibles entre paso 1 y paso 2 del login
@@ -91,9 +110,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sucursales: SucursalOption[];
   } | null>(null);
 
+  // Credenciales post-login disponibles hasta que se active o descarte la biometría
+  const postLoginCredsRef = useRef<{
+    usuario: string;
+    contrasena: string;
+    workspace: string;
+    empresa_id: string;
+  } | null>(null);
+
+  useEffect(() => {
+    checkSupport().then(setBiometricSupported);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("sv3_session");
     pendingData.current = null;
+    postLoginCredsRef.current = null;
     if (refreshTimerRef.current !== null) {
       clearTimeout(refreshTimerRef.current);
       refreshTimerRef.current = null;
@@ -172,6 +204,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const workspace = 'default';
       const loginRes = await apiLogin(usuario, contrasena, workspace, empresaId, sucursalId);
 
+      // Guardar para enableBiometric antes de limpiar pendingData
+      postLoginCredsRef.current = {
+        usuario,
+        contrasena,
+        workspace: loginRes.workspace ?? workspace,
+        empresa_id: loginRes.empresa_id ?? empresaId,
+      };
+
       pendingData.current = null;
       applyToken(loginRes.session);
 
@@ -187,8 +227,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [applyToken]
   );
 
+  const enableBiometric = useCallback(async () => {
+    const creds = postLoginCredsRef.current;
+    if (!creds) throw new Error("No hay credenciales disponibles para activar la huella");
+
+    const token = localStorage.getItem("sv3_session");
+    if (!token) throw new Error("No hay sesión activa");
+
+    const payload = parseTokenPayload(token);
+    const sucursal = (payload.sucursal ?? payload.sucursal_id) as string;
+
+    const credentialId = await biometricRegister(creds.usuario);
+    await biometricSave(credentialId, {
+      usuario: creds.usuario,
+      contrasena: creds.contrasena,
+      workspace: creds.workspace,
+      empresa_id: creds.empresa_id,
+      sucursal,
+    });
+
+    postLoginCredsRef.current = null;
+    setHasBiometric(true);
+  }, []);
+
+  const loginWithBiometric = useCallback(async () => {
+    const stored = await biometricLoad();
+    if (!stored) throw new Error("No hay sesión biométrica guardada");
+
+    const verified = await biometricVerify(stored.credentialId);
+    if (!verified) throw new Error("Huella no reconocida, ingresa manualmente");
+
+    try {
+      const loginRes = await apiLogin(
+        stored.session.usuario,
+        stored.session.contrasena,
+        stored.session.workspace,
+        stored.session.empresa_id,
+        stored.session.sucursal
+      );
+      applyToken(loginRes.session);
+      setState((prev) => ({
+        ...prev,
+        workspace: loginRes.workspace ?? stored.session.workspace,
+        empresaId: loginRes.empresa_id ?? stored.session.empresa_id,
+        sucursalId: loginRes.sucursal_id ?? stored.session.sucursal,
+        usuario: loginRes.usuario ?? stored.session.usuario,
+        isAuthenticated: true,
+      }));
+    } catch {
+      biometricClear();
+      setHasBiometric(false);
+      throw new Error("Sesión biométrica expirada. Ingresa tu contraseña para reactivarla.");
+    }
+  }, [applyToken]);
+
+  const disableBiometric = useCallback(() => {
+    biometricClear();
+    setHasBiometric(false);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, getSucursales }}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        login,
+        logout,
+        getSucursales,
+        hasBiometric,
+        biometricSupported,
+        enableBiometric,
+        loginWithBiometric,
+        disableBiometric,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

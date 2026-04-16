@@ -4,6 +4,7 @@ import TopBar from "./TopBar";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
 import MobileDrawer from "./MobileDrawer";
+import { BiometricBanner } from "@/components/BiometricBanner";
 
 export default function AppShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -41,6 +42,9 @@ export default function AppShell() {
 
       {/* Bottom nav (mobile) */}
       <BottomNav />
+
+      {/* Banner de activación biométrica (sobre BottomNav) */}
+      <BiometricBanner />
     </div>
   );
 }
