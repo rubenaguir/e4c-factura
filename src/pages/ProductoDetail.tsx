@@ -27,7 +27,8 @@ import {
 import type { ExistenciaNode } from "@/api/endpoints/productos";
 
 // ── LOVs ─────────────────────────────────────────────────────────────────────
-const LOV_UNIDAD = "Sistem:Lov:Lov:LoadLovFieldUnidadMedida";
+const LOV_UNIDAD = "Lov:Lov:Lov:LoadLovFieldUnidades";
+const LOV_ESQUEMA = "Lov:Lov:Lov:LoadLovFieldEsquemaImpuestos";
 
 // ── Zod schema ────────────────────────────────────────────────────────────────
 const productoSchema = z.object({
@@ -174,6 +175,11 @@ export default function ProductoDetail() {
   const { options: unidadOpts, loading: loadingUnidad } = useLov(
     LOV_UNIDAD,
     "unidad_id",
+    "descripcion"
+  );
+  const { options: esquemaOpts } = useLov(
+    LOV_ESQUEMA,
+    "esquema_impuestos_id",
     "descripcion"
   );
 
@@ -358,13 +364,6 @@ export default function ProductoDetail() {
                   placeholder="Código único"
                 />
               </Field>
-              <Field label="Código EAN">
-                <Input
-                  {...register("codigo_ean")}
-                  className="h-9 text-sm"
-                  placeholder="Código de barras"
-                />
-              </Field>
               <Field
                 label="Descripción *"
                 error={errors.descripcion?.message}
@@ -425,9 +424,6 @@ export default function ProductoDetail() {
               <Field label="Categoría">
                 <Input {...register("categoria")} className="h-9 text-sm" />
               </Field>
-              <Field label="Categoría contable">
-                <Input {...register("categoria_contable_id")} className="h-9 text-sm" />
-              </Field>
               <Field label="Clave SAT prod/serv">
                 <Input
                   {...register("clave_prod_ser_sat")}
@@ -449,101 +445,29 @@ export default function ProductoDetail() {
             <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
               Configuración
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Almacenable">
                 <SnSelect
                   value={watch("almacenable")}
                   onChange={(v) => setValue("almacenable", v)}
                 />
               </Field>
-              <Field label="Es paquete">
-                <SnSelect
-                  value={watch("es_paquete")}
-                  onChange={(v) => setValue("es_paquete", v)}
-                />
-              </Field>
-              <Field label="Es perecedero">
-                <SnSelect
-                  value={watch("es_perecedero")}
-                  onChange={(v) => setValue("es_perecedero", v)}
-                />
-              </Field>
-              <Field label="Usa lotes">
-                <SnSelect
-                  value={watch("usa_lotes")}
-                  onChange={(v) => setValue("usa_lotes", v)}
-                />
-              </Field>
-              <Field label="Usa series">
-                <SnSelect
-                  value={watch("usa_series")}
-                  onChange={(v) => setValue("usa_series", v)}
-                />
-              </Field>
-              <Field label="E-commerce">
-                <SnSelect
-                  value={watch("mostrar_en_ecommerce")}
-                  onChange={(v) => setValue("mostrar_en_ecommerce", v)}
-                />
-              </Field>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <Field label="Costeo">
+              <Field label="Esquema de impuestos *" error={errors.esquema_impuestos_id?.message}>
                 <Select
-                  value={watch("costeo")}
-                  onValueChange={(v) => setValue("costeo", v)}
+                  value={watch("esquema_impuestos_id")}
+                  onValueChange={(v) => setValue("esquema_impuestos_id", v)}
                 >
                   <SelectTrigger className="h-9 text-sm">
-                    <SelectValue />
+                    <SelectValue placeholder="Seleccionar…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PROMEDIO">Promedio</SelectItem>
-                    <SelectItem value="FIFO">FIFO</SelectItem>
-                    <SelectItem value="ESTANDAR">Estándar</SelectItem>
+                    {esquemaOpts.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.value} — {o.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              </Field>
-              <Field label="Esquema de impuestos *" error={errors.esquema_impuestos_id?.message}>
-                <Input
-                  {...register("esquema_impuestos_id")}
-                  className="h-9 text-sm"
-                  placeholder="Ej. GENERAL"
-                />
-              </Field>
-              <Field label="Costo promedio MN">
-                <Input
-                  {...register("costo_promedio_mn")}
-                  className="h-9 text-sm"
-                  placeholder="0.000000"
-                />
-              </Field>
-              <Field label="Peso c/porte (kg)">
-                <Input
-                  {...register("sat_cporte_peso_en_kg")}
-                  className="h-9 text-sm"
-                  placeholder="0.00"
-                />
-              </Field>
-            </div>
-          </section>
-
-          {/* ── Descripción extendida ──────────────────────────────────── */}
-          <section>
-            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-              Descripción extendida
-            </h2>
-            <div className="space-y-4">
-              <Field label="Características">
-                <Input {...register("caracteristicas")} className="h-9 text-sm" />
-              </Field>
-              <Field label="Especificaciones">
-                <Input {...register("especificaciones")} className="h-9 text-sm" />
-              </Field>
-              <Field label="Composición">
-                <Input {...register("composicion")} className="h-9 text-sm" />
-              </Field>
-              <Field label="Fracción arancelaria">
-                <Input {...register("fraccion_arancelaria")} className="h-9 text-sm" />
               </Field>
             </div>
           </section>

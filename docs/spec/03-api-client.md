@@ -675,7 +675,7 @@ Respuesta: mismo shape que un registro de `LoadLovFieldSku` más `estatus`, `imp
 | Método de pago | `LoadLovFieldMetodoPago` |
 | Régimen fiscal | `LoadLovFieldRegimenFiscal` |
 | Moneda | `LoadLovFieldMoneda` |
-| Unidad de medida | `LoadLovFieldUnidadMedida` |
+| Unidad de medida | `LoadLovFieldUnidades` |
 | Clave SAT prod/serv | `LoadLovFieldClaveProdServ` |
 | Objeto impuesto | `LoadLovFieldObjetoImpuesto` |
 | Tipo de cambio | `LoadLovFieldTipoCambio` |

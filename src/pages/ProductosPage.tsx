@@ -5,7 +5,6 @@ import { Search, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useProductos } from "@/context/ProductosContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useSnackbar } from "@/context/useSnackbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -17,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import type { ProductoRow } from "@/api/endpoints/productos";
 
-const ROW_HEIGHT = 52;
+const ROW_HEIGHT = 88;
 
 export default function ProductosPage() {
   const navigate = useNavigate();
@@ -128,9 +127,10 @@ export default function ProductosPage() {
         <div className="hidden md:flex shrink-0 bg-primary/70 text-sm">
           <div className="px-4 py-2 w-40 font-medium text-white">SKU</div>
           <div className="px-4 py-2 flex-1 font-medium text-white">Descripción</div>
+          <div className="px-4 py-2 w-32 font-medium text-white">Marca</div>
+          <div className="px-4 py-2 w-32 font-medium text-white">Modelo</div>
+          <div className="px-4 py-2 w-32 font-medium text-white">Clave SAT</div>
           <div className="px-4 py-2 w-20 font-medium text-white">Unidad</div>
-          <div className="px-4 py-2 w-24 font-medium text-white">Estatus</div>
-          <div className="px-4 py-2 w-40 font-medium text-white">Actualización</div>
         </div>
 
         {/* Skeleton */}
@@ -173,29 +173,20 @@ export default function ProductosPage() {
                     <div className="hidden md:flex w-full items-center text-sm">
                       <div className="px-4 w-40 font-mono text-xs truncate">{row.sku}</div>
                       <div className="px-4 flex-1 truncate">{row.descripcion}</div>
+                      <div className="px-4 w-32 text-muted-foreground text-xs truncate">{row.marca}</div>
+                      <div className="px-4 w-32 text-muted-foreground text-xs truncate">{row.modelo}</div>
+                      <div className="px-4 w-32 text-muted-foreground font-mono text-xs truncate">{row.clave_prod_ser_sat}</div>
                       <div className="px-4 w-20 text-muted-foreground text-xs">{row.unidad_id}</div>
-                      <div className="px-4 w-24">
-                        <Badge variant={row.estatus === "A" ? "default" : "secondary"}>
-                          {row.estatus === "A" ? "Activo" : "Inactivo"}
-                        </Badge>
-                      </div>
-                      <div className="px-4 w-40 text-muted-foreground text-xs truncate">
-                        {row.actualizacion_fecha}
-                      </div>
                     </div>
 
                     {/* Mobile layout */}
-                    <div className="md:hidden flex w-full items-center justify-between px-4">
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{row.descripcion}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{row.sku}</p>
+                    <div className="md:hidden flex w-full items-center px-4 py-2">
+                      <div className="min-w-0 w-full">
+                        <p className="h-5 font-medium text-sm truncate">{row.descripcion}</p>
+                        <p className="h-4 text-xs text-muted-foreground font-mono truncate">SKU: {row.sku || ""}</p>
+                        <p className="h-4 text-xs text-muted-foreground truncate">Marca / Modelo : {[row.marca, row.modelo].filter(Boolean).join(" / ") || ""}</p>
+                        <p className="h-4 text-xs text-muted-foreground font-mono truncate">Clave SAT: {row.clave_prod_ser_sat || ""}</p>
                       </div>
-                      <Badge
-                        variant={row.estatus === "A" ? "default" : "secondary"}
-                        className="shrink-0 text-xs ml-2"
-                      >
-                        {row.estatus === "A" ? "Activo" : "Inact."}
-                      </Badge>
                     </div>
                   </div>
                 );

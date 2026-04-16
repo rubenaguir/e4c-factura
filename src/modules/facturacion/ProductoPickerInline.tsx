@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSnackbar } from "@/context/useSnackbar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLov } from "@/hooks/useLov";
 import { InlineModal } from "./InlineModal";
 import { conceptoFromSku } from "./facturaMappers";
 import type { DraftConcepto } from "./types";
@@ -36,6 +37,7 @@ function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onAdd }: P
   });
   const { showError } = useSnackbar();
   const [addSaving, setAddSaving] = useState(false);
+  const { options: esquemaOpts } = useLov("Lov:Lov:Lov:LoadLovFieldEsquemaImpuestos", "esquema_impuestos_id", "descripcion");
   const debRef = useRef<number | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -173,7 +175,14 @@ function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onAdd }: P
             </div>
             <div className="space-y-1">
               <Label>Esquema imp. *</Label>
-              <Input value={addForm.esquema_impuestos_id} onChange={e => setAddForm(p => ({ ...p, esquema_impuestos_id: e.target.value.toUpperCase() }))} className="uppercase" />
+              <Select value={addForm.esquema_impuestos_id} onValueChange={v => setAddForm(p => ({ ...p, esquema_impuestos_id: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {esquemaOpts.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.value} — {o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex gap-2 pt-2">

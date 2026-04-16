@@ -1927,3 +1927,77 @@ Response:
     }
 }
 ```
+
+## Ejemplos de interaccion con el backend para modulo de productos
+
+
+#### Endpoint : opReq=Lov:Lov:Lov:LoadLovFieldUnidades
+
+Request:
+```
+fetch("http://localhost/SisnetV3Desarrollo/php/interfase.php", {
+  "referrer": "http://localhost/SisnetV3Desarrollo/index.php?o=de2b9efd142fbdbf9d6c427227364bc6",
+  "body": "opReq=Lov%3ALov%3ALov%3ALoadLovFieldUnidades&pageSize=500",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+```
+  
+Response:
+```
+{
+    "totalCount": 2,
+    "records": [
+        {
+            "unidad_id": "ACT",
+            "descripcion": "ACTIVIDAD",
+            "simbolo": "ACT",
+            "magnitud_fisica": "NA"
+        },
+        {
+            "unidad_id": "Kilogramo",
+            "descripcion": "El kilogramo es la masa de un cilindro de aleaci\u00f3n de Platino-Iridio depositado en la Oficina Internacional de Pesas y Medidas.",
+            "simbolo": "kg",
+            "magnitud_fisica": "Masa"
+        }
+    ]
+}
+```
+
+#### Endpoint : opReq=Lov:Lov:Lov:LoadLovFieldEsquemaImpuestos
+
+Request:
+```
+fetch("http://localhost/SisnetV3Desarrollo/php/interfase.php", {
+  "body": "opReq=Lov%3ALov%3ALov%3ALoadLovFieldEsquemaImpuestos&pageSize=500",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+```
+  
+Response:
+```
+{
+    "totalCount": 4,
+    "records": [
+        {
+            "esquema_impuestos_id": "EXENTO",
+            "descripcion": "EXENTO"
+        },
+        {
+            "esquema_impuestos_id": "GENERAL",
+            "descripcion": "IVA trasladado al 16"
+        },
+        {
+            "esquema_impuestos_id": "IVA_CERO",
+            "descripcion": "IVA TASA 0"
+        },
+        {
+            "esquema_impuestos_id": "RESICO",
+            "descripcion": "RETENCION 1.25%"
+        }
+    ]
+}
+```

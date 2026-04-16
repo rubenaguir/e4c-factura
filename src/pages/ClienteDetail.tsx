@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   ArrowLeft,
+  ChevronDown,
+  ChevronRight,
   Loader2,
   MapPin,
   Plus,
@@ -189,6 +191,7 @@ export default function ClienteDetail() {
   const [tab, setTab] = useState<"generales" | "domicilios">("generales");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingRecord, setLoadingRecord] = useState(!isNew);
+  const [dirExpanded, setDirExpanded] = useState(false);
 
   // Dirección sheet state
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
@@ -505,10 +508,6 @@ export default function ClienteDetail() {
               />
             </Field>
 
-            <Field label="Tipo de cliente" error={errors.tipo_cliente_id?.message}>
-              <Input {...register("tipo_cliente_id")} className="h-9 text-sm" />
-            </Field>
-
             <Section title="Fiscal" />
 
             <Field label="Código Postal *" error={errors.codigo_postal?.message}>
@@ -572,109 +571,62 @@ export default function ClienteDetail() {
               </Select>
             </Field>
 
-            <Section title="Dirección" />
+            <button
+              type="button"
+              onClick={() => setDirExpanded((v) => !v)}
+              className="col-span-full flex items-center gap-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {dirExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+              Dirección
+            </button>
 
-            <Field label="Calle">
-              <Input {...register("calle")} className="h-9 text-sm" />
-            </Field>
-            <Field label="No. exterior">
-              <Input {...register("no_exterior")} className="h-9 text-sm" />
-            </Field>
-            <Field label="No. interior">
-              <Input {...register("no_interior")} className="h-9 text-sm" />
-            </Field>
-            <Field label="Colonia">
-              <Input {...register("colonia")} className="h-9 text-sm" />
-            </Field>
-            <Field label="Municipio">
-              <Input
-                {...register("municipio")}
-                className="h-9 text-sm bg-muted/30"
-                readOnly
-                placeholder="(auto desde CP)"
-              />
-            </Field>
-            <Field label="Estado">
-              <Input
-                {...register("estado")}
-                className="h-9 text-sm bg-muted/30"
-                readOnly
-                placeholder="(auto desde CP)"
-              />
-            </Field>
-            <Field label="Localidad">
-              <Input
-                {...register("localidad")}
-                className="h-9 text-sm bg-muted/30"
-                readOnly
-                placeholder="(auto desde CP)"
-              />
-            </Field>
-            <Field label="Referencia">
-              <Input {...register("referencia")} className="h-9 text-sm" />
-            </Field>
-
-            <Section title="Crédito y facturación" />
-
-            <Field label="Método de pago SAT">
-              <Select
-                value={metodoPagoSelected || "__none__"}
-                onValueChange={(v) => {
-                  const real = v === "__none__" ? "" : v;
-                  setValue("metodo_de_pago", real, { shouldDirty: true });
-                  const opt = metodoPagoOpts.find((o) => o.value === real);
-                  setValue("metodo_de_pago_descr", opt?.label ?? "", { shouldDirty: true });
-                }}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Sin especificar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sin especificar</SelectItem>
-                  {metodoPagoOpts.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.value} — {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field label="Días de crédito">
-              <Input
-                {...register("dias_credito")}
-                className="h-9 text-sm"
-                placeholder="0"
-              />
-            </Field>
-            <Field label="Límite de crédito">
-              <Input
-                {...register("limite_credito")}
-                className="h-9 text-sm"
-                placeholder="0.00"
-              />
-            </Field>
-            <Field label="Num. cuenta pago">
-              <Input {...register("num_cta_pago")} className="h-9 text-sm" />
-            </Field>
-            <Field label="Lista de precios">
-              <Input {...register("lista_precios_id")} className="h-9 text-sm" />
-            </Field>
-
-            <Section title="Otros" />
-
-            <Field label="Cuenta contable">
-              <Input {...register("cuenta_contable")} className="h-9 text-sm" />
-            </Field>
-            <Field label="Núm. proveedor">
-              <Input {...register("num_proveedor")} className="h-9 text-sm" />
-            </Field>
-            <Field label="Tax ID (extranjero)">
-              <Input {...register("tax_id")} className="h-9 text-sm" />
-            </Field>
-            <Field label="Núm. reg. id trib.">
-              <Input {...register("num_reg_id_trib")} className="h-9 text-sm" />
-            </Field>
+            {dirExpanded && (
+              <>
+                <Field label="Calle">
+                  <Input {...register("calle")} className="h-9 text-sm" />
+                </Field>
+                <Field label="No. exterior">
+                  <Input {...register("no_exterior")} className="h-9 text-sm" />
+                </Field>
+                <Field label="No. interior">
+                  <Input {...register("no_interior")} className="h-9 text-sm" />
+                </Field>
+                <Field label="Colonia">
+                  <Input {...register("colonia")} className="h-9 text-sm" />
+                </Field>
+                <Field label="Municipio">
+                  <Input
+                    {...register("municipio")}
+                    className="h-9 text-sm bg-muted/30"
+                    readOnly
+                    placeholder="(auto desde CP)"
+                  />
+                </Field>
+                <Field label="Estado">
+                  <Input
+                    {...register("estado")}
+                    className="h-9 text-sm bg-muted/30"
+                    readOnly
+                    placeholder="(auto desde CP)"
+                  />
+                </Field>
+                <Field label="Localidad">
+                  <Input
+                    {...register("localidad")}
+                    className="h-9 text-sm bg-muted/30"
+                    readOnly
+                    placeholder="(auto desde CP)"
+                  />
+                </Field>
+                <Field label="Referencia">
+                  <Input {...register("referencia")} className="h-9 text-sm" />
+                </Field>
+              </>
+            )}
           </div>
 
           {/* Actions */}
