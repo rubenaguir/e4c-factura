@@ -26,6 +26,7 @@ import { ProductoPickerInline, type ProductoPickerInlineHandle } from "@/modules
 import { ConceptoSheet } from "@/modules/facturacion/ConceptoSheet";
 import { CancelDialog } from "@/modules/facturacion/CancelDialog";
 import { MailDialog } from "@/modules/facturacion/MailDialog";
+import { PdfSheet, PDF_SHEET_CLOSED, type PdfSheetState } from "@/modules/facturacion/PdfSheet";
 
 export default function FacturaDetail() {
   const { serie, folio } = useParams<{ serie: string; folio: string }>();
@@ -60,7 +61,7 @@ export default function FacturaDetail() {
   const [mailSent, setMailSent] = useState(false);
   const [mailErr, setMailErr] = useState<string | null>(null);
 
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfSheet, setPdfSheet] = useState<PdfSheetState>(PDF_SHEET_CLOSED);
 
   // Swipe state
   const touchStart = useRef<number>(0);
@@ -176,13 +177,18 @@ export default function FacturaDetail() {
 
   const handlePdf = async () => {
     if (!draft.serie || !draft.folio) return;
-    setPdfLoading(true);
+    const filename = `Factura-${draft.serie}-${draft.folio}.pdf`;
+    setPdfSheet({ open: true, loading: true, error: null, blob: null, filename });
     try {
-      const data = await printPdf(empresaId ?? "", draft.serie, draft.folio, "");
-      window.open(data, "_blank");
+      const blob = await printPdf(empresaId ?? "", draft.serie, draft.folio, "");
+      setPdfSheet(prev => ({ ...prev, loading: false, blob }));
     } catch (e) {
-      showError(e instanceof Error ? e.message : String(e));
-    } finally { setPdfLoading(false); }
+      setPdfSheet(prev => ({
+        ...prev,
+        loading: false,
+        error: e instanceof Error ? e.message : String(e),
+      }));
+    }
   };
 
   const handleSendMail = async (nombre: string, correo: string, asunto: string) => {
@@ -596,8 +602,8 @@ export default function FacturaDetail() {
             </div>
           ) : (
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" disabled={pdfLoading} onClick={handlePdf}>
-                {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <FileText className="h-4 w-4 mr-1" />}
+              <Button variant="outline" className="flex-1" disabled={pdfSheet.loading} onClick={handlePdf}>
+                <FileText className="h-4 w-4 mr-1" />
                 PDF
               </Button>
               {draft.estatus === "R" && (
@@ -651,6 +657,11 @@ export default function FacturaDetail() {
         saving={mailSaving}
         sent={mailSent}
         error={mailErr}
+      />
+
+      <PdfSheet
+        state={pdfSheet}
+        onClose={() => setPdfSheet(PDF_SHEET_CLOSED)}
       />
     </div>
   );

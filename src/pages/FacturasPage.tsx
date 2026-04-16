@@ -10,6 +10,7 @@ import {
   Mail,
   Eye,
 } from "lucide-react";
+import { PdfSheet, PDF_SHEET_CLOSED, type PdfSheetState } from "@/modules/facturacion/PdfSheet";
 import { useFacturas } from "@/context/FacturasContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -118,7 +119,7 @@ export default function FacturasPage() {
 
   // Actions
   const { showError } = useSnackbar();
-  const [pdfLoading, setPdfLoading] = useState<string | null>(null); // "serie-folio"
+  const [pdfSheet, setPdfSheet] = useState<PdfSheetState>(PDF_SHEET_CLOSED);
   const [mail, setMail] = useState<MailDialogState>(MAIL_CLOSED);
 
   useEffect(() => {
@@ -167,15 +168,17 @@ export default function FacturasPage() {
 
   const handlePdf = async (e: React.MouseEvent, row: FacturaRow) => {
     e.stopPropagation();
-    const key = `${row.serie}-${row.folio}`;
-    setPdfLoading(key);
+    const filename = `Factura-${row.serie}-${row.folio}.pdf`;
+    setPdfSheet({ open: true, loading: true, error: null, blob: null, filename });
     try {
-      const dataUrl = await printPdf(empresaId ?? "", row.serie, row.folio, "");
-      window.open(dataUrl, "_blank");
+      const blob = await printPdf(empresaId ?? "", row.serie, row.folio, "");
+      setPdfSheet(prev => ({ ...prev, loading: false, blob }));
     } catch (err) {
-      alert(err instanceof Error ? err.message : String(err));
-    } finally {
-      setPdfLoading(null);
+      setPdfSheet(prev => ({
+        ...prev,
+        loading: false,
+        error: err instanceof Error ? err.message : String(err),
+      }));
     }
   };
 
@@ -376,14 +379,10 @@ export default function FacturasPage() {
                               size="sm"
                               className="h-7 w-7 p-0"
                               title="Descargar PDF"
-                              disabled={pdfLoading === key}
+                              disabled={pdfSheet.loading}
                               onClick={(e) => handlePdf(e, row)}
                             >
-                              {pdfLoading === key ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <FileText className="h-4 w-4" />
-                              )}
+                              <FileText className="h-4 w-4" />
                             </Button>
                           )}
                           {row.estatus === "R" && (
@@ -465,15 +464,10 @@ export default function FacturasPage() {
                         variant="outline"
                         size="sm"
                         className="h-7 text-xs gap-1"
-                        disabled={pdfLoading === key}
+                        disabled={pdfSheet.loading}
                         onClick={(e) => handlePdf(e, row)}
                       >
-                        {pdfLoading === key ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <FileText className="h-3 w-3" />
-                        )}{" "}
-                        PDF
+                        <FileText className="h-3 w-3" /> PDF
                       </Button>
                     )}
                     {row.estatus === "R" && (
@@ -520,6 +514,12 @@ export default function FacturasPage() {
           </div>
         </div>
       )}
+
+      {/* PDF sheet */}
+      <PdfSheet
+        state={pdfSheet}
+        onClose={() => setPdfSheet(PDF_SHEET_CLOSED)}
+      />
 
       {/* Send-mail dialog */}
       <Dialog

@@ -152,7 +152,7 @@ interface FacturasContextValue {
     serie: string,
     folio: string,
     printMetodoPago: string
-  ) => Promise<string>;
+  ) => Promise<Blob>;
 }
 
 // ---------------------------------------------------------------------------

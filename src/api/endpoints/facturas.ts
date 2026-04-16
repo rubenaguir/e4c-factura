@@ -560,14 +560,14 @@ export function sendMailFactura(
 
 /**
  * PrintPdf usa GET con params en query string — patrón diferente al estándar.
- * Devuelve el string `data:application/pdf;base64,...` para abrir en nueva pestaña.
+ * Devuelve el Blob binario del PDF para que el cliente cree un Object URL.
  */
 export async function printPdfFactura(
   empresaId: string,
   serie: string,
   folio: string,
   printMetodoPago: string
-): Promise<string> {
+): Promise<Blob> {
   const session = localStorage.getItem("sv3_session") ?? "";
   const base = import.meta.env.VITE_API_BASE_URL as string;
   const params = new URLSearchParams({
@@ -582,7 +582,7 @@ export async function printPdfFactura(
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-  return response.text();
+  return response.blob();
 }
 
 // ---------------------------------------------------------------------------
