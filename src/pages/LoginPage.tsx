@@ -102,12 +102,12 @@ export default function LoginPage() {
       {/* Fondo vertical (portrait) */}
       <div
         className="absolute inset-0 landscape:hidden"
-        style={{ backgroundImage: "url('images/login-bg-v2.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+        style={{ backgroundImage: "url('images/login-bg-v2.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
       />
       {/* Fondo horizontal / desktop (landscape) */}
       <div
         className="absolute inset-0 portrait:hidden"
-        style={{ backgroundImage: "url('images/login-bg-h2.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+        style={{ backgroundImage: "url('images/login-bg-h2.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}
       />
       {/* Overlay oscuro para contraste */}
       <div className="absolute inset-0 bg-black/45" />
