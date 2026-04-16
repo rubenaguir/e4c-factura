@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, ChevronDown, ChevronUp,
-  Loader2, FileText, Mail, MoreHorizontal,
+  Loader2, FileText, Mail, MoreHorizontal, UserPlus, PackagePlus,
 } from "lucide-react";
 import { useFacturas } from "@/context/FacturasContext";
 import { useCatalogos } from "@/context/CatalogosContext";
@@ -21,8 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { DraftConcepto, FacturaDraft } from "@/modules/facturacion/types";
 import { calcBase, calcImpImporte, calcTotales, fmt } from "@/modules/facturacion/facturaUtils";
 import { newDraft, draftFromFactura, buildPayload } from "@/modules/facturacion/facturaMappers";
-import { ClientePickerInline } from "@/modules/facturacion/ClientePickerInline";
-import { ProductoPickerInline } from "@/modules/facturacion/ProductoPickerInline";
+import { ClientePickerInline, type ClientePickerInlineHandle } from "@/modules/facturacion/ClientePickerInline";
+import { ProductoPickerInline, type ProductoPickerInlineHandle } from "@/modules/facturacion/ProductoPickerInline";
 import { ConceptoSheet } from "@/modules/facturacion/ConceptoSheet";
 import { CancelDialog } from "@/modules/facturacion/CancelDialog";
 import { MailDialog } from "@/modules/facturacion/MailDialog";
@@ -50,6 +50,8 @@ export default function FacturaDetail() {
   const [saving, setSaving] = useState(false);
 
   const [editConcepto, setEditConcepto] = useState<{ c: DraftConcepto; idx: number } | null>(null);
+  const clientePickerRef = useRef<ClientePickerInlineHandle>(null);
+  const productoPickerRef = useRef<ProductoPickerInlineHandle>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelSaving, setCancelSaving] = useState(false);
 
@@ -257,11 +259,22 @@ export default function FacturaDetail() {
 
           {/* ── CLIENTE ── */}
           <section className="border rounded-lg">
-            <div className="bg-primary/70 px-3 py-2 rounded-t-lg">
+            <div className="bg-primary/70 px-3 py-2 rounded-t-lg flex items-center justify-between">
               <p className="section-heading">Cliente</p>
+              {!isReadOnly && !draft.clienteId && (
+                <button
+                  type="button"
+                  title="Registrar cliente nuevo"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+                  onClick={() => clientePickerRef.current?.openAdd()}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <div className="p-3 space-y-3">
               <ClientePickerInline
+                ref={clientePickerRef}
                 clienteId={draft.clienteId}
                 receptorNombre={draft.receptorNombre}
                 receptorRfc={draft.receptorRfc}
@@ -420,8 +433,18 @@ export default function FacturaDetail() {
 
           {/* ── CONCEPTOS ── */}
           <section className="border rounded-lg">
-            <div className="bg-primary/70 px-3 py-2 rounded-t-lg">
+            <div className="bg-primary/70 px-3 py-2 rounded-t-lg flex items-center justify-between">
               <p className="section-heading">Conceptos</p>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  title="Agregar producto nuevo"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+                  onClick={() => productoPickerRef.current?.openAdd()}
+                >
+                  <PackagePlus className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <div className="divide-y">
               {draft.conceptos.length === 0 && (
@@ -496,6 +519,7 @@ export default function FacturaDetail() {
             {!isReadOnly && (
               <div className="p-3 border-t">
                 <ProductoPickerInline
+                  ref={productoPickerRef}
                   listaPreciosId={draft.listaPreciosId}
                   monedaId={draft.monedaId}
                   tipoCambio={draft.tipoCambio}

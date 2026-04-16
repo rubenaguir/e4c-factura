@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { Plus, Loader2, Search } from "lucide-react";
 import { useFacturas } from "@/context/FacturasContext";
 import { searchClientesForFactura, validateLovFieldClientes } from "@/api/endpoints/facturas";
@@ -33,10 +33,15 @@ export interface ClientePickerInlineProps {
   regimenFiscalOptions: { value: string; label: string }[];
 }
 
-export function ClientePickerInline({
+export interface ClientePickerInlineHandle {
+  openAdd: () => void;
+}
+
+export const ClientePickerInline = forwardRef<ClientePickerInlineHandle, ClientePickerInlineProps>(
+function ClientePickerInline({
   clienteId, receptorNombre, receptorRfc, readonly,
   onSelect, onPresetLoaded, regimenFiscalOptions,
-}: ClientePickerInlineProps) {
+}: ClientePickerInlineProps, ref) {
   const { loadPresetClientData } = useFacturas();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Array<{ cliente_id: string; nombre: string; rfc: string }>>([]);
@@ -48,6 +53,8 @@ export function ClientePickerInline({
   const [addSaving, setAddSaving] = useState(false);
   const debRef = useRef<number | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({ openAdd: () => setAddOpen(true) }));
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) { setResults([]); setShowDrop(false); return; }
@@ -197,4 +204,4 @@ export function ClientePickerInline({
       </InlineModal>
     </div>
   );
-}
+});

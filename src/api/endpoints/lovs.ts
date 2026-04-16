@@ -94,9 +94,9 @@ export function loadMetodoPago(): Promise<MetodoPagoRecord[]> {
   return fetchList("Lov:Lov:Lov:LoadLovFieldMetodosPagoSat33");
 }
 
-/** Devuelve los regímenes fiscales configurados para la empresa del JWT. */
+/** Devuelve el catálogo completo de regímenes fiscales del SAT. */
 export function loadRegimenFiscal(): Promise<RegimenFiscalRecord[]> {
-  return fetchList("ventas:facturas_venta_33:facturas_venta:SearchRegimenesSAT");
+  return fetchList("sistema:empresas:empresas:SearchRegimenesSAT");
 }
 
 /**

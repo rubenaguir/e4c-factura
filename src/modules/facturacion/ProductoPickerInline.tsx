@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { Plus, Loader2, Search } from "lucide-react";
 import { validateSku, searchSkuForFactura } from "@/api/endpoints/facturas";
 import { addProducto } from "@/api/endpoints/productos";
@@ -19,7 +19,12 @@ export interface ProductoPickerInlineProps {
   onAdd: (concepto: DraftConcepto) => void;
 }
 
-export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onAdd }: ProductoPickerInlineProps) {
+export interface ProductoPickerInlineHandle {
+  openAdd: () => void;
+}
+
+export const ProductoPickerInline = forwardRef<ProductoPickerInlineHandle, ProductoPickerInlineProps>(
+function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onAdd }: ProductoPickerInlineProps, ref) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SkuLov[]>([]);
   const [showDrop, setShowDrop] = useState(false);
@@ -33,6 +38,8 @@ export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onA
   const [addSaving, setAddSaving] = useState(false);
   const debRef = useRef<number | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({ openAdd: () => setAddOpen(true) }));
 
   const doSearch = useCallback(async (q: string) => {
     setSearching(true);
@@ -179,4 +186,4 @@ export function ProductoPickerInline({ listaPreciosId, monedaId, tipoCambio, onA
       </InlineModal>
     </div>
   );
-}
+});

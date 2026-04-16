@@ -98,10 +98,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: "linear-gradient(160deg, hsl(200 33% 94%) 0%, hsl(163 40% 93%) 100%)" }}
+    <div
+      className="relative min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: "url('/images/login-bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      <Card className="w-full max-w-sm shadow-lg border-border/60">
+      {/* Overlay oscuro para contraste */}
+      <div className="absolute inset-0 bg-black/40" />
+
+      <Card className="relative w-full max-w-sm shadow-xl border-border/60 backdrop-blur-sm bg-background/90">
         <CardHeader className="space-y-1 pb-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="h-9 w-9 rounded-lg brand-gradient flex items-center justify-center shadow-md">
