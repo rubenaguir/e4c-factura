@@ -49,10 +49,14 @@ export function calcBase(c: DraftConcepto): number {
   return qty * price - discount;
 }
 
+const round6 = (n: number) => Math.round(n * 1_000_000) / 1_000_000;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// Regla SAT: importe por concepto redondeado a 6 decimales.
 export function calcImpImporte(base: number, tasa: string, tipoFactor: string): number {
   if (tipoFactor === "Exento") return 0;
   const t = parseFloat(tasa) || 0;
-  return base * (t / 100);
+  return round6(base * (t / 100));
 }
 
 export function calcTotales(conceptos: DraftConcepto[]): Totales {
@@ -70,13 +74,15 @@ export function calcTotales(conceptos: DraftConcepto[]): Totales {
       const k = `${imp.aplicacion}:${imp.impuesto}:${imp.tasa}`;
       const importe = calcImpImporte(base, imp.tasa, imp.tipo_factor);
       const existing = map.get(k);
-      if (existing) existing.importe += importe;
+      // Acumular a 6 decimales para evitar drift de punto flotante entre conceptos.
+      if (existing) existing.importe = round6(existing.importe + importe);
       else map.set(k, { aplicacion: imp.aplicacion, impuesto: imp.impuesto, tasa: imp.tasa, importe });
     }
   }
 
-  const rows = Array.from(map.values());
+  // Redondear a 2 decimales solo al totalizar, siguiendo la regla del SAT.
+  const rows = Array.from(map.values()).map(r => ({ ...r, importe: round2(r.importe) }));
   const traslados = rows.filter(r => r.aplicacion === "T").reduce((s, r) => s + r.importe, 0);
   const retenciones = rows.filter(r => r.aplicacion === "R").reduce((s, r) => s + r.importe, 0);
-  return { subtotal, rows, total: subtotal + traslados - retenciones };
+  return { subtotal: round2(subtotal), rows, total: round2(subtotal + traslados - retenciones) };
 }

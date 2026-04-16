@@ -485,7 +485,7 @@ export default function FacturaDetail() {
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-xs font-mono text-muted-foreground">{c.sku}</p>
+                            <p className="text-xs font-mono text-muted-foreground">SKU: {c.sku}</p>
                             <p className="text-sm font-medium leading-tight">{c.descripcion}</p>
                           </div>
                           {!isReadOnly && (
@@ -503,11 +503,14 @@ export default function FacturaDetail() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
+                          Clave SAT: {c.clave_prod_ser_sat }
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {c.cantidad} {c.unidad_id} × ${fmt(parseFloat(c.precio_unitario) || 0)}
                         </p>
                         {allImps.map(imp => (
                           <p key={imp._key} className="text-xs text-muted-foreground">
-                            {imp.aplicacion === "T" ? "Traslado" : "Retención"} {imp.impuesto} {imp.tasa}%:{" "}
+                            {imp.aplicacion === "T" ? "Traslado" : "Retención"} {imp.impuesto} {Number(imp.tasa).toFixed(1)}%:{" "}
                             {imp.aplicacion === "R" ? "−" : ""}${fmt(calcImpImporte(base, imp.tasa, imp.tipo_factor))}
                           </p>
                         ))}
