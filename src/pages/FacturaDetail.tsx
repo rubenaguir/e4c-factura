@@ -256,8 +256,8 @@ export default function FacturaDetail() {
         <div className="max-w-2xl mx-auto p-4 space-y-4">
 
           {/* ── CLIENTE ── */}
-          <section className="border rounded-lg overflow-hidden">
-            <div className="bg-primary/70 px-3 py-2">
+          <section className="border rounded-lg">
+            <div className="bg-primary/70 px-3 py-2 rounded-t-lg">
               <p className="section-heading">Cliente</p>
             </div>
             <div className="p-3 space-y-3">
@@ -419,8 +419,8 @@ export default function FacturaDetail() {
           </section>
 
           {/* ── CONCEPTOS ── */}
-          <section className="border rounded-lg overflow-hidden">
-            <div className="bg-primary/70 px-3 py-2">
+          <section className="border rounded-lg">
+            <div className="bg-primary/70 px-3 py-2 rounded-t-lg">
               <p className="section-heading">Conceptos</p>
             </div>
             <div className="divide-y">

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { SucursalOption } from "@/api/endpoints/auth";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ export default function LoginPage() {
   const [sucursales, setSucursales] = useState<SucursalOption[]>([]);
   const [credenciales, setCredenciales] = useState<Step1Values | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // ── Formulario paso 1 ────────────────────────────────────────────────────
   const form1 = useForm<Step1Values>({
@@ -132,13 +133,25 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="contrasena">Contraseña</Label>
-                <Input
-                  id="contrasena"
-                  type="password"
-                  autoComplete="current-password"
-                  disabled={loading}
-                  {...form1.register("contrasena")}
-                />
+                <div className="relative">
+                  <Input
+                    id="contrasena"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    disabled={loading}
+                    className="pr-10"
+                    {...form1.register("contrasena")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {form1.formState.errors.contrasena && (
                   <p className="text-xs text-destructive">{form1.formState.errors.contrasena.message}</p>
                 )}
