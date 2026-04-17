@@ -597,7 +597,7 @@ export default function FacturaDetail() {
       </div>
 
       {/* ── STICKY BOTTOM BAR ── */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-background border-t px-4 py-2 z-40">
+      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-background border-t px-4 py-3 z-40">
         <div className="max-w-2xl mx-auto">
           {!isReadOnly ? (
             <div className="flex gap-2">

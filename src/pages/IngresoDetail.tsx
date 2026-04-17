@@ -601,7 +601,7 @@ export default function IngresoDetail() {
       </div>
 
       {/* ── STICKY BOTTOM BAR ─────────────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background px-4 py-3 flex gap-2 justify-end z-20
+      <div className="fixed bottom-16 left-0 right-0 border-t bg-background px-4 py-3 flex gap-2 justify-end z-40
                       md:static md:border-t md:px-4 md:py-3 md:bg-transparent max-w-2xl md:mx-auto md:w-full">
         {screenState === "nueva" && (
           <Button className="flex-1 md:flex-none md:min-w-[120px]" onClick={handleGuardar} disabled={saving}>
