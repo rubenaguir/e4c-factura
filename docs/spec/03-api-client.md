@@ -293,13 +293,17 @@ Respuesta: string `data:application/pdf;base64,...` — abrir en nueva pestaña 
 ### Ingresos (`tesoreria:registro_ingresos_33:registro_ingresos:*`)
 | Acción | Params clave |
 |---|---|
-| `Search` | `start`, `limit`, filtros |
+| `Search` | filtros: `fecha_inicial`, `fecha_final`, `fecha_inicial_pago`, `fecha_final_pago`, `rfc`, `nombre`, `serie`, `folio`, `fact_serie_folio`, `descripcion`, `no_autorizacion`, `referencia`, `banco_id`, `estatus` |
 | `Load` | `serie`, `folio` |
-| `SearchCuentasCobrar` | `cliente_id` |
-| `Add` | payload pago + array `aplicaciones` |
-| `Stamp` | `serie`, `folio` |
+| `LoadLovFieldClientes` | `pageSize` (ej. `500`) — lista de clientes para LOV |
+| `ValidateLovFieldClientes` | `cliente_id` — valida cliente y trae datos bancarios del cliente |
+| `SearchCuentasBancariasCliente` | `cliente_id` — cuentas bancarias usadas anteriormente |
+| `SearchCuentasCobrar` | `cliente_id` — cuentas por cobrar pendientes de pago |
+| `Add` | ver payload completo abajo |
+| `Stamp` | `serie`, `folio` — timbra REP posterior (facturas PUE) |
 | `Cancel33` | `serie`, `folio`, `motivo` |
-| `PrintPdf` | `serie`, `folio` |
+| `SendMail` | `serie`, `folio`, `nombre`, `correo` |
+| `PrintPdf` | `serie`, `folio` (GET) — devuelve PDF binario |
 
 ### Clientes (`ventas:clientes:clientes:*`)
 

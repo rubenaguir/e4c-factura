@@ -78,17 +78,24 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ## Fase 5 — Ingresos / Pagos
 
-**Entregable:** registro de pagos (REP) con aplicaciones a facturas.
+**Entregable:** registro de pago (REP) aplicado a una factura.
 
-1. `endpoints/ingresos.ts`
-2. `IngresosContext` con `searchCuentasCobrar`
-3. `IngresosPage`
-4. `IngresoDetail` con grid de facturas del cliente y cálculo de parcialidades
-5. Timbrado de REP
+1. `endpoints/ingresos.ts` — wraps: `Search`, `Load`, `LoadLovFieldClientes`, `ValidateLovFieldClientes`, `SearchCuentasBancariasCliente`, `SearchCuentasCobrar`, `Add`, `Stamp`, `Cancel33`, `SendMail`, `PrintPdf`
+2. `IngresosContext` — `search`, `load`, `add`, `stamp`, `cancel`, `sendMail`
+3. `IngresosPage` — búsqueda con filtros (fecha pago, RFC, nombre, serie/folio factura, estatus)
+4. `IngresoDetail`:
+   - ClientePicker (`ValidateLovFieldClientes` / LOV `LoadLovFieldClientes`)
+   - Al seleccionar cliente: `SearchCuentasBancariasCliente` + `SearchCuentasCobrar` en paralelo
+   - Selector de una sola factura (no grid multi-selección)
+   - Precarga de `importe` con el saldo de la factura seleccionada
+   - Campos de pago: fecha, forma pago, moneda, TC, importe, descripción, referencia
+   - Campos bancarios: precargados desde historial del cliente
+   - Botones según estado: Guardar / Timbrar / PDF / Correo / Cancelar
+5. Payload `Add`: solo el registro `cuentas_cobrar[0][...]` de la factura seleccionada — no enviar registros con `importe=0`
 
 **Leer antes:** `docs/spec/03-api-client.md` §Ingresos, `docs/spec/05-screens.md` §IngresoDetail
 
-**Éxito:** registrar un pago aplicado a múltiples facturas y generar REP.
+**Éxito:** registrar un pago aplicado a una factura, timbrar REP (PPD automático / PUE manual), PDF y correo funcionales.
 
 ---
 

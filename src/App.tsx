@@ -4,6 +4,7 @@ import AppShell from "@/components/layout/AppShell";
 import LoginPage from "@/pages/LoginPage";
 import FacturasPage from "@/pages/FacturasPage";
 import IngresosPage from "@/pages/IngresosPage";
+import IngresoDetail from "@/pages/IngresoDetail";
 import ClientesPage from "@/pages/ClientesPage";
 import ClienteDetail from "@/pages/ClienteDetail";
 import ProductosPage from "@/pages/ProductosPage";
@@ -44,6 +45,8 @@ const router = createHashRouter([
       { path: "facturas/nuevo", element: <FacturaDetail /> },
       { path: "facturas/:serie/:folio", element: <FacturaDetail /> },
       { path: "ingresos", element: <IngresosPage /> },
+      { path: "ingresos/nuevo", element: <IngresoDetail /> },
+      { path: "ingresos/:serie/:folio", element: <IngresoDetail /> },
       { path: "clientes", element: <ClientesPage /> },
       { path: "clientes/nuevo", element: <ClienteDetail /> },
       { path: "clientes/:id", element: <ClienteDetail /> },

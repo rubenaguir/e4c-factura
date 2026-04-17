@@ -67,7 +67,7 @@ export function DateInput({ value, onChange, className, disabled, id }: DateInpu
   }
 
   return (
-    <div className="relative inline-flex items-center">
+    <div className="relative flex items-center">
       <input
         id={id}
         type="text"

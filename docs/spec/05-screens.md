@@ -197,12 +197,143 @@ En la sección Totales se muestra **un renglón por cada combinación única de 
 
 ## IngresoDetail
 
-1. ClientePicker → `SearchCuentasCobrar(cliente_id)` → grid de facturas pendientes.
-2. Columnas: UUID · Serie/Folio · Saldo · Importe a aplicar · Parcialidad.
-3. Campos pago: fecha, forma pago, moneda, TC, cuenta cobro, referencia.
-4. Validación: `Σ(importe aplicado) === total pagado`.
-5. **Guardar y timbrar REP** → `Add` con array `aplicaciones`.
-6. Si falla timbrado pero persistió → botón `Stamp` disponible.
+### Estados de la pantalla
+
+| Estado | Condición | Comportamiento |
+|---|---|---|
+| `nueva` | Ruta `/ingresos/nuevo` | Todos los campos editables, cliente vacío |
+| `cargada` | Ruta `/ingresos/:serie/:folio`, `estatus=R`, sin UUID | Campos en solo lectura; botón **Timbrar** visible |
+| `timbrada` | `estatus=R` con `uuid` presente | Solo lectura completa; botones **PDF**, **Correo** |
+| `cancelada` | `estatus=C` | Solo lectura, badge "Cancelado" |
+
+---
+
+### Sección: Cliente
+
+**Campo:** ClientePicker (texto + botón lupa)
+
+- Al escribir `cliente_id` numérico y salir del campo → `ValidateLovFieldClientes(cliente_id)`
+- Al abrir LOV (botón lupa) → `LoadLovFieldClientes(pageSize=500)` con búsqueda local por nombre/RFC
+- Al seleccionar cliente, en paralelo:
+  - `SearchCuentasBancariasCliente(cliente_id)` → si devuelve registros, precarga el primer resultado en los campos bancarios (`banco_id`, `banco_descr`, `sat_cta_ori`)
+  - `SearchCuentasCobrar(cliente_id)` → carga la lista de facturas disponibles en el selector de factura
+
+**Campos que se leen de `ValidateLovFieldClientes` / `LoadLovFieldClientes`:**
+`cliente_id`, `rfc`, `nombre`, `codigo_postal`, `regimen_fiscal_id`, `banco_id`, `banco_descr`, `sat_cta_ori`, `sat_banco_dest`, `sat_banco_dest_descr`, `sat_cta_dest`
+
+---
+
+### Sección: Factura a aplicar
+
+Un selector (Select / Combobox) con las facturas pendientes del cliente obtenidas de `SearchCuentasCobrar`. Al seleccionar una factura:
+
+- Autocompletar `importe` con el valor de `saldo` de la factura seleccionada
+- Mostrar en solo lectura: Serie/Folio, Fecha, Moneda, Total, Saldo, Tipo (PUE/PPD)
+
+> **Decisión de diseño:** la UI aplica el pago a una sola factura por registro de ingreso (simplificación respecto al legacy). El payload envía únicamente `cuentas_cobrar[0][...]` con la factura seleccionada. No se envían registros con `importe=0`. La estructura `cuentas_cobrar[N][campo]` se preserva para alineación futura con el backend legacy si se requiere multi-factura.
+
+**Campos en estado (no necesariamente visibles):** `num_cta_cobrar`, `documento`, `cliente_id`, `rfc`, `nombre`, `subtotal`, `impuestos_ret`, `impuestos_tras`, `tipo_cambio`, `total_moneda_base`, `saldo_moneda_base`
+
+---
+
+### Sección: Datos del pago
+
+| Campo | Param backend | Notas |
+|---|---|---|
+| Fecha de pago | `fecha_pago` | DateTimePicker, default: ahora |
+| Forma de pago | `forma_pago` + `forma_pago_descr` | LOV SAT (clave + descripción) |
+| Moneda | `moneda_id` | `MXN` \| `USD` |
+| Tipo de cambio | `tipo_cambio` | Solo editable si moneda ≠ MXN |
+| Importe | `importe` | Autocompletado con saldo; editable |
+| Descripción | `descripcion` | Texto libre, ej. `"PAGO DE FACTURA F1532"` |
+| Referencia | `referencia` | Opcional |
+| No. autorización | `no_autorizacion` | Opcional |
+
+---
+
+### Sección: Datos bancarios
+
+Todos los campos bancarios son **texto libre y editables**. No existe un catálogo centralizado de cuentas bancarias de clientes — el backend las va acumulando por registro de pago.
+
+Al seleccionar cliente, `SearchCuentasBancariasCliente` devuelve las cuentas previamente usadas. Si hay registros, ofrecer el primero como valor precargado; el usuario puede cambiarlo libremente. Si no hay historial, los campos quedan vacíos.
+
+| Campo | Param backend | Fuente inicial |
+|---|---|---|
+| Banco receptor (empresa) | `banco_id` + `banco_descr` | `ValidateLovFieldClientes` → `banco_id` / `banco_descr` |
+| Cuenta origen (cliente) | `sat_cta_ori` | `SearchCuentasBancariasCliente` → `sat_cta_ori` (primer resultado) |
+| Banco origen (cliente) | *(no se envía — backend lo resuelve)* | — |
+| Cuenta destino (empresa) | `sat_cta_dest` | `ValidateLovFieldClientes` → `sat_cta_dest` |
+| Banco destino (empresa) | `sat_banco_dest` + `sat_banco_dest_descr` | `ValidateLovFieldClientes` → `sat_banco_dest` / `sat_banco_dest_descr` |
+
+---
+
+### Validaciones antes de guardar
+
+- Cliente seleccionado
+- Factura seleccionada
+- `importe > 0`
+- `forma_pago` seleccionada
+- Si `moneda_id ≠ MXN`: `tipo_cambio > 0`
+
+---
+
+### Botones de acción
+
+| Botón | Visible cuando | Acción |
+|---|---|---|
+| **Guardar** | estado `nueva` | `Add` → pasa a `cargada` o `timbrada` |
+| **Timbrar** | `cargada` (sin UUID) | `Stamp(serie, folio)` → pasa a `timbrada` |
+| **PDF** | `timbrada` | `PrintPdf(serie, folio)` → abre PDF |
+| **Correo** | `timbrada` | Sheet con campos nombre/correo → `SendMail` |
+| **Cancelar** | `timbrada` | `Cancel33(serie, folio, motivo)` |
+
+---
+
+### Payload `Add` (una sola factura)
+
+```
+serie=
+folio=
+fecha_pago=DD/MM/YYYY HH:mm:ss
+cliente_id=6
+nombre=JOSE MIGUEL RAMIREZ VALENCIA
+rfc=RAVM810219IW0
+receptor_regimen_fiscal_id=612
+codigo_postal=57150
+descripcion=PAGO DE FACTURA DE VENTA F1532
+moneda_id=MXN
+tipo_cambio=1
+forma_pago=03
+forma_pago_descr=Transferencia electrónica de fondos
+importe=3190
+banco_id=002
+banco_descr=BANAMEX
+sat_cta_ori=123456789
+sat_banco_dest=002
+sat_banco_dest_descr=BANAMEX
+sat_cta_dest=343434343
+no_autorizacion=
+referencia=
+fecha=
+observaciones=
+estatus_sat=
+cuentas_cobrar[0][num_cta_cobrar]=1409
+cuentas_cobrar[0][importe]=3190
+cuentas_cobrar[0][moneda_id]=MXN
+cuentas_cobrar[0][tipo_cambio]=1
+cuentas_cobrar[0][documento]=FACTURA_VENTA
+cuentas_cobrar[0][documento_serie]=F
+cuentas_cobrar[0][documento_folio]=1532
+cuentas_cobrar[0][tipo_cambio_pago]=
+```
+
+El índice siempre es `0`. `tipo_cambio_pago` va vacío en `Add`; el backend lo resuelve.
+
+---
+
+### Detalle cargado (`Load`)
+
+`cuentas_cobrar.records` contiene la factura aplicada con los mismos campos que `SearchCuentasCobrar` más `tipo_cambio_pago` (TC al momento del pago). Mostrar en solo lectura.
 
 ---
 
@@ -316,19 +447,62 @@ Los cuatro endpoints comparten el mismo payload. La diferencia es únicamente el
 
 ### Payload Ingreso (`tesoreria:...:Add`)
 
+Todos los valores numéricos como string. Params de la cabecera:
+
+| Param | Descripción |
+|---|---|
+| `serie` | Vacío — el backend asigna `"IN"` |
+| `folio` | Vacío — el backend lo asigna |
+| `fecha_pago` | `"DD/MM/YYYY HH:mm:ss"` |
+| `cliente_id` | ID del cliente |
+| `nombre` | Razón social del cliente |
+| `rfc` | RFC del cliente |
+| `receptor_regimen_fiscal_id` | Régimen fiscal SAT del cliente |
+| `codigo_postal` | CP del cliente |
+| `descripcion` | Texto descriptivo del pago (ej. `"PAGO DE FACTURA DE VENTA F1532"`) |
+| `moneda_id` | `"MXN"` \| `"USD"` |
+| `tipo_cambio` | Tipo de cambio como string |
+| `forma_pago` | Clave SAT (ej. `"03"`) |
+| `forma_pago_descr` | Descripción forma pago |
+| `importe` | Total pagado |
+| `banco_id` | Banco destino (cuenta de la empresa) |
+| `banco_descr` | Descripción del banco destino |
+| `sat_cta_ori` | Cuenta bancaria origen del cliente |
+| `sat_banco_ori` | Banco origen (clave SAT) — lo resuelve el backend del `banco_id` del cliente |
+| `sat_cta_dest` | Cuenta bancaria destino (de la empresa) |
+| `sat_banco_dest` | Banco destino (clave SAT) |
+| `sat_banco_dest_descr` | Descripción banco destino |
+| `no_autorizacion` | Número de autorización (opcional) |
+| `referencia` | Referencia del pago (opcional) |
+| `fecha` | Vacío — backend asigna fecha de registro |
+| `observaciones` | Observaciones generales (opcional) |
+| `estatus_sat` | Vacío en alta |
+
+Las cuentas por cobrar aplicadas van como array indexado con los índices originales de la tabla (`cuentas_cobrar[N][campo]`). Filas con `importe=0` se envían igualmente para que el backend las descarte:
+
 ```
-cliente_id=000123
-fecha=2026-04-13
-forma_pago=03
-moneda=MXN
-tipo_cambio=1
-cuenta_cobro_id=CC-001
-total_pagado=3480.00
-aplicaciones=[
-  { "serie": "A", "folio": "1234", "importe_aplicado": 1740.00, "num_parcialidad": 1 },
-  { "serie": "A", "folio": "1235", "importe_aplicado": 1740.00, "num_parcialidad": 1 }
-]
+cuentas_cobrar[0][num_cta_cobrar]=704
+cuentas_cobrar[0][importe]=0
+cuentas_cobrar[0][moneda_id]=USD
+cuentas_cobrar[0][tipo_cambio]=18.2523
+cuentas_cobrar[0][documento]=FACTURA_VENTA
+cuentas_cobrar[0][documento_serie]=F
+cuentas_cobrar[0][documento_folio]=800
+cuentas_cobrar[0][tipo_cambio_pago]=
+
+cuentas_cobrar[22][num_cta_cobrar]=1409
+cuentas_cobrar[22][importe]=3190
+cuentas_cobrar[22][moneda_id]=MXN
+cuentas_cobrar[22][tipo_cambio]=1
+cuentas_cobrar[22][documento]=FACTURA_VENTA
+cuentas_cobrar[22][documento_serie]=F
+cuentas_cobrar[22][documento_folio]=1532
+cuentas_cobrar[22][tipo_cambio_pago]=
 ```
+
+El índice `N` corresponde a la posición original en el grid (no se renumera). `tipo_cambio_pago` se envía vacío en el `Add`; el backend lo calcula.
+
+Respuesta: `{ msg, record: IngresoDetalle }` (ver shape de `Load`)
 
 ---
 

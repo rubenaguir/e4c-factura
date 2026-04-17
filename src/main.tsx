@@ -7,6 +7,7 @@ import { ClientesProvider } from "./context/ClientesContext.tsx";
 import { ProductosProvider } from "./context/ProductosContext.tsx";
 import { CatalogosProvider } from "./context/CatalogosContext.tsx";
 import { FacturasProvider } from "./context/FacturasContext.tsx";
+import { IngresosProvider } from "./context/IngresosContext.tsx";
 import PwaUpdateBanner from "./components/PwaUpdateBanner.tsx";
 import { SnackbarProvider } from "./context/SnackbarContext.tsx";
 
@@ -18,8 +19,10 @@ createRoot(document.getElementById("root")!).render(
           <ClientesProvider>
             <ProductosProvider>
               <FacturasProvider>
-                <App />
-                <PwaUpdateBanner />
+                <IngresosProvider>
+                  <App />
+                  <PwaUpdateBanner />
+                </IngresosProvider>
               </FacturasProvider>
             </ProductosProvider>
           </ClientesProvider>

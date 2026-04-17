@@ -237,27 +237,27 @@ export default function FacturaDetail() {
     <div className="flex flex-col h-full">
 
       {/* ── TopBar ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-background sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
+      <div className="flex items-center gap-3 px-4 py-3 border-b bg-background sticky top-0 z-10">
+        {/* <div className="flex items-center gap-2"> */}
+          <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div>
-            <h1 className="text-base font-semibold leading-tight">{title}</h1>
+          {/* <div> */}
+            <h1 className="text-base font-semibold flex-1 truncate">{title}</h1>
             {draft.estatus && (
-              <div className="mt-0.5">
+              <div>
                 {draft.estatus === "P" && <Badge variant="secondary" className="text-[11px]">Prefactura</Badge>}
                 {draft.estatus === "R" && <Badge className="text-[11px] bg-green-600 hover:bg-green-700">Timbrada</Badge>}
                 {draft.estatus === "C" && <Badge variant="destructive" className="text-[11px]">Cancelada</Badge>}
               </div>
             )}
-          </div>
-        </div>
-        {draft.uuid && (
+          {/* </div> */}
+        {/* </div> */}
+        {/* {draft.uuid && (
           <div className="text-right">
             <p className="text-[10px] text-muted-foreground font-mono truncate max-w-[160px]">{draft.uuid}</p>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* ── Scrollable content ── */}
@@ -584,6 +584,14 @@ export default function FacturaDetail() {
               </div>
             </section>
           )}
+
+        {/* UUID (read) */}
+        {draft?.uuid && (
+          <div className="rounded-lg border p-3 bg-muted/20 space-y-1">
+            <p className="text-xs text-muted-foreground">UUID</p>
+            <p className="font-mono text-xs break-all">{draft.uuid}</p>
+          </div>
+        )}          
 
         </div>
       </div>

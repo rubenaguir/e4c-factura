@@ -82,6 +82,8 @@ React 19 · Vite 5 · TypeScript 5 · React Router v6 · Tailwind 3 · shadcn/ui
 | PWA, layout responsivo, SW, errores, i18n | `docs/spec/06-pwa-layout.md` |
 | Plan por fases con referencias cruzadas | `docs/spec/07-phases.md` |
 | Decisiones de diseño (por qué se eligió X) | `docs/spec/08-decisions.md` |
+| Contratos backend ingresos (ejemplos request/response) | `docs/spec/09-sv3-contracts-ingresos.md` |
+| **Pago integrado PUE en FacturaDetail** (pendiente backend) | `docs/spec/10-pago-integrado-pue.md` |
 
 ### Qué leer por fase
 
