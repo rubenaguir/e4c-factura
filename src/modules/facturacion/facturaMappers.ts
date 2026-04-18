@@ -26,6 +26,8 @@ export function newDraft(): FacturaDraft {
     observaciones: "", notasImpresion: "", ordenCompraCliente: "",
     listaPreciosId: "", numRegIdTrib: "",
     cuentaCobroId: "", referenciaPago: "",
+    importePago: "", bancoId: "", bancoDescr: "",
+    satCtaOri: "", satCtaDest: "", satBancoDest: "", satBancoDestDescr: "",
     conceptos: [],
   };
 }
@@ -52,6 +54,8 @@ export function draftFromFactura(f: FacturaCompleta): FacturaDraft {
     ordenCompraCliente: "", listaPreciosId: f.conceptos[0]?.lista_precios_id ?? "",
     numRegIdTrib: f.num_reg_id_trib ?? "",
     cuentaCobroId: f.num_cta_pago ?? "", referenciaPago: "",
+    importePago: "", bancoId: "", bancoDescr: "",
+    satCtaOri: "", satCtaDest: "", satBancoDest: "", satBancoDestDescr: "",
     conceptos: f.conceptos.map(conceptoFromExisting),
   };
 }
@@ -177,7 +181,7 @@ export function buildConceptoPayload(c: DraftConcepto): ConceptoPayload {
   };
 }
 
-export function buildPayload(draft: FacturaDraft): FacturaPayload {
+export function buildPayload(draft: FacturaDraft, action: "Add" | "other" = "other"): FacturaPayload {
   return {
     serie: draft.serie,
     folio: draft.folio,
@@ -222,6 +226,16 @@ export function buildPayload(draft: FacturaDraft): FacturaPayload {
     ...(draft.metodoPago === "PUE" && draft.cuentaCobroId
       ? { cuenta_cobro_id: draft.cuentaCobroId, referencia_pago: draft.referenciaPago }
       : {}),
+    ...(draft.metodoPago === "PUE" && action === "Add" ? {
+      "generar_ingreso[importe]": draft.importePago,
+      "generar_ingreso[referencia_pago]": draft.referenciaPago,
+      "generar_ingreso[banco_id]": draft.bancoId,
+      "generar_ingreso[banco_descr]": draft.bancoDescr,
+      "generar_ingreso[sat_cta_ori]": draft.satCtaOri,
+      "generar_ingreso[sat_cta_dest]": draft.satCtaDest,
+      "generar_ingreso[sat_banco_dest]": draft.satBancoDest,
+      "generar_ingreso[sat_banco_dest_descr]": draft.satBancoDestDescr,
+    } : {}),
     conceptos: draft.conceptos.map(buildConceptoPayload),
     compl_serv_par_construc: EMPTY_COMPL_SERV_PAR_CONSTRUC,
     info_seguros: EMPTY_INFO_SEGUROS,

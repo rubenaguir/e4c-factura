@@ -6,7 +6,10 @@ Las facturas con `metodo_pago = "PUE"` (Pago en una sola exhibición) implican q
 
 Este documento describe el flujo "Flujo A": el frontend captura los datos de pago y los incluye en el `Add` de factura; el backend crea la factura y el ingreso en un solo paso.
 
-> **Pendiente de validación en backend:** confirmar que el endpoint `ventas:facturas_venta_33:facturas_venta:Add` efectivamente crea el registro de ingreso cuando se reciben los campos de pago. Si el backend requiere refactorización para soportarlo, este flujo queda bloqueado hasta que esté listo.
+> **Restricciones confirmadas:**
+> - El pago integrado **solo aplica al endpoint `Add` (timbrado)**. Las prefacturas (`AddPrefactura`) **no registran ingreso**, independientemente del método de pago.
+> - El pago solo se procesa cuando `metodo_pago === "PUE"` en la factura timbrada.
+> - El pago se comunica al backend encapsulando todos sus campos bajo el contenedor `generar_ingreso[campo]=valor`. Si el contenedor está ausente o vacío, no se crea ningún ingreso.
 
 ---
 
@@ -23,8 +26,8 @@ Este documento describe el flujo "Flujo A": el frontend captura los datos de pag
    - Usuario revisa/ajusta campos bancarios
    - Usuario ingresa referencia (opcional)
 
-4. Usuario presiona "Prefactura" o "Timbrar"
-   → App construye payload Add/AddPrefactura incluyendo campos de pago
+4. Usuario presiona "Timbrar" (solo Add, nunca AddPrefactura)
+   → App construye payload Add incluyendo campos de pago + bandera de ingreso
    → Backend crea factura + ingreso en un solo call
    → Respuesta: FacturaCompleta → navega a modo lectura
 ```
@@ -39,21 +42,40 @@ Este documento describe el flujo "Flujo A": el frontend captura los datos de pag
 
 > Este call ya se hace en IngresoDetail. En FacturaDetail debe dispararse desde `ClientePickerInline.onSelect` cuando `metodoPago === "PUE"`.
 
-### Al guardar (Add / AddPrefactura)
+### Al guardar (solo Add — timbrado)
 
-El payload ya existente se extiende con los campos de pago cuando `metodoPago === "PUE"`:
+El pago integrado **nunca se envía en `AddPrefactura`**. El payload se extiende con los campos de pago únicamente cuando `metodoPago === "PUE"` y la acción es `Add`:
 
 ```
 // Campos adicionales al payload estándar de Add
-forma_pago=03                          ← ya presente en payload estándar
-forma_pago_descr=Transferencia...      ← ya presente
-referencia_pago=REF-001                ← nuevo
-banco_id=002                           ← nuevo (banco receptor de la empresa)
-banco_descr=BANAMEX                    ← nuevo
-sat_cta_ori=123456789                  ← nuevo (cuenta origen del cliente)
-sat_cta_dest=343434343                 ← nuevo (cuenta destino de la empresa)
-sat_banco_dest=002                     ← nuevo
-sat_banco_dest_descr=BANAMEX           ← nuevo
+forma_pago=03                                    ← ya presente en payload estándar
+forma_pago_descr=Transferencia...                ← ya presente
+
+// Contenedor de pago — si está presente con datos, el backend crea el ingreso.
+// Si se omite o está vacío, no se procesa ningún pago.
+
+// -- Enviados por el frontend --
+generar_ingreso[importe]=1234.56          ← por defecto = total de la factura; editable para pago parcial
+generar_ingreso[referencia_pago]=REF-001
+generar_ingreso[banco_id]=002
+generar_ingreso[banco_descr]=BANAMEX
+generar_ingreso[sat_cta_ori]=123456789
+generar_ingreso[sat_cta_dest]=343434343
+generar_ingreso[sat_banco_dest]=002
+generar_ingreso[sat_banco_dest_descr]=BANAMEX
+
+// -- Asignados por el backend desde los params de la factura --
+// $generar_ingreso["cliente_id"]                 = $params["cliente_id"]
+// $generar_ingreso["nombre"]                     = $params["receptor_nombre"]
+// $generar_ingreso["rfc"]                        = $params["receptor_rfc"]
+// $generar_ingreso["receptor_regimen_fiscal_id"] = $params["receptor_regimen_fiscal_id"]
+// $generar_ingreso["codigo_postal"]              = $params["codigo_postal"]
+// $generar_ingreso["moneda_id"]                  = $params["moneda_id"]
+// $generar_ingreso["tipo_cambio"]                = $params["tipo_cambio"]
+// $generar_ingreso["forma_pago"]                 = $params["forma_pago"]
+// $generar_ingreso["forma_pago_descr"]           = $params["forma_pago_descr"]
+// $generar_ingreso["fecha_pago"]                 = $factura["fecha"]
+// $generar_ingreso["descripcion"]                = "PAGO DE FACTURA DE VENTA " . $factura["serie"] . $factura["folio"]
 ```
 
 > `cuenta_cobro_id` — campo actualmente en el draft pero con semántica poco clara para facturas nuevas. **Pendiente confirmar con backend si es necesario o si se puede omitir.**
@@ -64,11 +86,12 @@ sat_banco_dest_descr=BANAMEX           ← nuevo
 
 | Campo visible | Draft field | Param backend | Fuente inicial |
 |---|---|---|---|
-| Banco receptor | `bancoId` | `banco_id` + `banco_descr` | `SearchCuentasBancariasCliente` → `banco_id` |
-| Cuenta origen (cliente) | `satCtaOri` | `sat_cta_ori` | `SearchCuentasBancariasCliente` → `sat_cta_ori` |
-| Cuenta destino (empresa) | `satCtaDest` | `sat_cta_dest` | `ValidateLovFieldClientes` → `sat_cta_dest` (si se expone en factura) |
-| Banco destino | `satBancoDest` | `sat_banco_dest` + `sat_banco_dest_descr` | `SearchCuentasBancariasCliente` |
-| Referencia | `referenciaPago` | `referencia_pago` | Vacío |
+| Importe pagado | `importePago` | `generar_ingreso[importe]` | `draft.total` (editable para pago parcial) |
+| Banco receptor | `bancoId` | `generar_ingreso[banco_id]` + `generar_ingreso[banco_descr]` | `SearchCuentasBancariasCliente` → `banco_id` |
+| Cuenta origen (cliente) | `satCtaOri` | `generar_ingreso[sat_cta_ori]` | `SearchCuentasBancariasCliente` → `sat_cta_ori` |
+| Cuenta destino (empresa) | `satCtaDest` | `generar_ingreso[sat_cta_dest]` | `ValidateLovFieldClientes` → `sat_cta_dest` (si se expone en factura) |
+| Banco destino | `satBancoDest` | `generar_ingreso[sat_banco_dest]` + `generar_ingreso[sat_banco_dest_descr]` | `SearchCuentasBancariasCliente` |
+| Referencia | `referenciaPago` | `generar_ingreso[referencia_pago]` | Vacío |
 
 Todos los campos son editables por el usuario. Los datos bancarios son opcionales para poder guardar (el ingreso sin datos bancarios es válido en el backend).
 
@@ -86,6 +109,7 @@ cuentaCobroId: string;
 referenciaPago: string;
 
 // Agregar
+importePago: string;       // precargado con draft.total; editable para pago parcial
 bancoId: string;
 bancoDescr: string;
 satCtaOri: string;
@@ -100,18 +124,21 @@ Inicializar los nuevos campos en vacío. En `draftFromFactura` mapear desde la r
 
 ### 3. `buildPayload` (facturaMappers.ts)
 
-Extender el bloque condicional PUE:
+Extender el bloque condicional PUE, **solo cuando la acción es `"Add"` (no `"AddPrefactura"`)**:
 
 ```typescript
-...(draft.metodoPago === "PUE" ? {
-  referencia_pago: draft.referenciaPago,
-  banco_id: draft.bancoId,
-  banco_descr: draft.bancoDescr,
-  sat_cta_ori: draft.satCtaOri,
-  sat_cta_dest: draft.satCtaDest,
-  sat_banco_dest: draft.satBancoDest,
-  sat_banco_dest_descr: draft.satBancoDestDescr,
+...(draft.metodoPago === "PUE" && action === "Add" ? {
+  "generar_ingreso[importe]": draft.importePago,   // precargado con total; editable
+  "generar_ingreso[referencia_pago]": draft.referenciaPago,
+  "generar_ingreso[banco_id]": draft.bancoId,
+  "generar_ingreso[banco_descr]": draft.bancoDescr,
+  "generar_ingreso[sat_cta_ori]": draft.satCtaOri,
+  "generar_ingreso[sat_cta_dest]": draft.satCtaDest,
+  "generar_ingreso[sat_banco_dest]": draft.satBancoDest,
+  "generar_ingreso[sat_banco_dest_descr]": draft.satBancoDestDescr,
 } : {}),
+// Si todos los campos bancarios están vacíos, el backend recibe el contenedor vacío
+// y no procesa el ingreso. No se requiere lógica adicional en el frontend.
 ```
 
 ### 4. `ClientePickerInline` → callback `onSelect`
@@ -126,6 +153,7 @@ Reemplazar los dos inputs actuales por el formulario completo:
 
 ```
 ╔══ PAGO INTEGRADO (PUE) ════════════════╗
+║ Importe:         [1,234.56    ]       ║  ← precargado con total; editable
 ║ Banco receptor:  [002 BANAMEX ▼]      ║  ← LOV o texto libre
 ║ Cta. origen:     [123456789   ]       ║  ← cuenta del cliente
 ║ Cta. destino:    [343434343   ]       ║  ← cuenta de la empresa
@@ -133,7 +161,7 @@ Reemplazar los dos inputs actuales por el formulario completo:
 ╚════════════════════════════════════════╝
 ```
 
-La sección se muestra solo cuando `metodoPago === "PUE" && !isReadOnly`.
+La sección se muestra solo cuando `metodoPago === "PUE" && !isReadOnly`. El botón "Prefactura" **no aplica pago**; la sección PUE es irrelevante para ese flujo y el payload de `AddPrefactura` nunca incluye `generar_ingreso` ni los campos bancarios.
 
 En modo lectura (factura timbrada), si el backend devuelve los datos bancarios en `FacturaCompleta`, mostrarlos como texto.
 
@@ -141,7 +169,7 @@ En modo lectura (factura timbrada), si el backend devuelve los datos bancarios e
 
 ## Pendientes de validación con backend
 
-1. **¿El `Add` de factura crea el ingreso automáticamente** cuando recibe los campos bancarios? ¿O se necesita un endpoint separado?
+1. **Confirmar que el backend interpreta correctamente `generar_ingreso[campo]=valor`** como contenedor de pago y que omitirlo (o enviarlo vacío) no genera ingreso.
 2. **¿Qué devuelve `FacturaCompleta`** para facturas PUE con pago registrado? ¿Incluye `serie_ingreso` / `folio_ingreso` para poder navegar al ingreso creado?
 3. **`cuenta_cobro_id`** — ¿es necesario en el payload? ¿Qué valor toma para una factura nueva?
 4. **`sat_cta_dest` y `sat_banco_dest`** — ¿provienen del JWT de empresa o deben enviarse explícitamente?

@@ -8,6 +8,8 @@ import { useFacturas } from "@/context/FacturasContext";
 import { useCatalogos } from "@/context/CatalogosContext";
 import { useAuth } from "@/hooks/useAuth";
 import type { ClienteLov, FacturaCompleta } from "@/api/endpoints/facturas";
+import { searchCuentasBancariasCliente, validateLovFieldClientesIngresos } from "@/api/endpoints/ingresos";
+import type { CuentaBancaria } from "@/api/endpoints/ingresos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
@@ -63,6 +65,7 @@ export default function FacturaDetail() {
   const [mailErr, setMailErr] = useState<string | null>(null);
 
   const [pdfSheet, setPdfSheet] = useState<PdfSheetState>(PDF_SHEET_CLOSED);
+  const [cuentasBancariasCliente, setCuentasBancariasCliente] = useState<CuentaBancaria[]>([]);
 
   // Swipe state
   const touchStart = useRef<number>(0);
@@ -97,6 +100,29 @@ export default function FacturaDetail() {
   const setDraftField = <K extends keyof FacturaDraft>(key: K, value: FacturaDraft[K]) =>
     setDraft(prev => ({ ...prev, [key]: value }));
 
+  const loadDatosBancarios = (clienteId: string) => {
+    Promise.allSettled([
+      validateLovFieldClientesIngresos(clienteId),
+      searchCuentasBancariasCliente(clienteId),
+    ]).then(([lovRes, cuentasRes]) => {
+      if (lovRes.status === "fulfilled") {
+        const lov = lovRes.value;
+        setDraft(prev => ({
+          ...prev,
+          bancoId: lov.banco_id ?? prev.bancoId,
+          bancoDescr: lov.banco_descr ?? prev.bancoDescr,
+          satCtaOri: lov.sat_cta_ori ?? prev.satCtaOri,
+          satBancoDest: lov.sat_banco_dest ?? prev.satBancoDest,
+          satBancoDestDescr: lov.sat_banco_dest_descr ?? prev.satBancoDestDescr,
+          satCtaDest: lov.sat_cta_dest ?? prev.satCtaDest,
+        }));
+      }
+      if (cuentasRes.status === "fulfilled") {
+        setCuentasBancariasCliente(cuentasRes.value.records);
+      }
+    });
+  };
+
   // ── Client selection ────────────────────────────────────────────────────────
 
   const handleClientSelect = (lov: ClienteLov) => {
@@ -108,14 +134,24 @@ export default function FacturaDetail() {
       }));
       return;
     }
+    const currentMetodoPago = draft.metodoPago;
+    const rawFormaPago = lov.metodo_de_pago || draft.formaPago;
+    const enforcedFormaPago =
+      currentMetodoPago === "PPD" ? "99"
+      : currentMetodoPago === "PUE" && rawFormaPago === "99" ? "03"
+      : rawFormaPago;
+    const enforcedFormaPagoDescr = enforcedFormaPago === rawFormaPago && lov.metodo_de_pago_descr
+      ? lov.metodo_de_pago_descr
+      : formaPago.options.find(o => o.value === enforcedFormaPago)?.label ?? enforcedFormaPago;
+
     setDraft(prev => ({
       ...prev,
       clienteId: lov.cliente_id,
       receptorNombre: lov.nombre,
       receptorRfc: lov.rfc,
       receptorRegimenFiscalId: lov.regimen_fiscal_id,
-      formaPago: lov.metodo_de_pago || prev.formaPago,
-      formaPagoDescr: lov.metodo_de_pago_descr || prev.formaPagoDescr,
+      formaPago: enforcedFormaPago,
+      formaPagoDescr: enforcedFormaPagoDescr,
       listaPreciosId: lov.lista_precios_id || prev.listaPreciosId,
       vendedorId: lov.vendedor_id || prev.vendedorId,
       vendedorNombre: lov.vendedor_nombre || prev.vendedorNombre,
@@ -129,9 +165,13 @@ export default function FacturaDetail() {
       estado: lov.estado || prev.estado,
       pais: lov.pais || prev.pais,
     }));
+
+    if (currentMetodoPago === "PUE") {
+      loadDatosBancarios(lov.cliente_id);
+    }
   };
 
-  const handlePresetLoaded = (f: FacturaCompleta) => {
+  const handlePresetLoaded = (f: FacturaCompleta, clienteId: string) => {
     setDraft(prev => ({
       ...prev,
       usoCfdiId: f.uso_id || prev.usoCfdiId,
@@ -139,6 +179,7 @@ export default function FacturaDetail() {
       metodoPago: f.metodo_pago || prev.metodoPago,
       metodoPagoDescr: f.metodo_pago_descr || prev.metodoPagoDescr,
     }));
+    if (f.metodo_pago === "PUE") loadDatosBancarios(clienteId);
   };
 
   // ── Save / stamp ────────────────────────────────────────────────────────────
@@ -147,7 +188,8 @@ export default function FacturaDetail() {
     if (!draft.clienteId) { showError("Selecciona un cliente"); return; }
     if (draft.conceptos.length === 0) { showError("Agrega al menos un concepto"); return; }
     setSaving(true);
-    const payload = buildPayload(draft);
+    const buildAction = action === "timbrar" && isNew ? "Add" : "other";
+    const payload = buildPayload(draft, buildAction);
     try {
       let res: { msg: string; record: FacturaCompleta };
       if (action === "prefactura") {
@@ -338,8 +380,21 @@ export default function FacturaDetail() {
                     <Label className="text-xs">Método pago</Label>
                     {!isReadOnly ? (
                       <Select value={draft.metodoPago} onValueChange={v => {
-                        setDraftField("metodoPago", v);
-                        setDraftField("metodoPagoDescr", optLabel(metodoPago.options, v));
+                        setDraft(prev => {
+                          const newFormaPago =
+                            v === "PPD" ? "99"
+                            : v === "PUE" && prev.formaPago === "99" ? "03"
+                            : prev.formaPago;
+                          return {
+                            ...prev,
+                            metodoPago: v,
+                            metodoPagoDescr: optLabel(metodoPago.options, v),
+                            formaPago: newFormaPago,
+                            formaPagoDescr: optLabel(formaPago.options, newFormaPago),
+                            ...(v === "PUE" && totales ? { importePago: String(totales.total) } : {}),
+                          };
+                        });
+                        if (v === "PUE" && draft.clienteId) loadDatosBancarios(draft.clienteId);
                       }}>
                         <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -566,20 +621,72 @@ export default function FacturaDetail() {
             </section>
           )}
 
-          {/* ── PAGO (solo PUE) ── */}
+          {/* ── PAGO (solo PUE, edición) ── */}
           {draft.metodoPago === "PUE" && !isReadOnly && (
             <section className="border rounded-lg overflow-hidden">
               <div className="bg-primary/70 px-3 py-2">
                 <p className="section-heading">Pago integrado (PUE)</p>
               </div>
               <div className="p-3 space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Cuenta cobro</Label>
-                  <Input className="h-8 text-sm" value={draft.cuentaCobroId} onChange={e => setDraftField("cuentaCobroId", e.target.value)} placeholder="ID cuenta cobro" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Importe</Label>
+                    <Input className="h-8 text-sm" type="number" step="any" value={draft.importePago} onChange={e => setDraftField("importePago", e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Referencia</Label>
+                    <Input className="h-8 text-sm" value={draft.referenciaPago} onChange={e => setDraftField("referenciaPago", e.target.value)} placeholder="Opcional" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Referencia</Label>
-                  <Input className="h-8 text-sm" value={draft.referenciaPago} onChange={e => setDraftField("referenciaPago", e.target.value)} placeholder="Referencia de pago" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Banco origen (cliente)</Label>
+                    <div className="flex gap-2">
+                      <Input className="h-8 text-sm w-20" value={draft.bancoId} onChange={e => setDraftField("bancoId", e.target.value)} placeholder="Clave" />
+                      <Input className="h-8 text-sm flex-1" value={draft.bancoDescr} onChange={e => setDraftField("bancoDescr", e.target.value)} placeholder="Nombre del banco" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cuenta origen (cliente)</Label>
+                    {cuentasBancariasCliente.length > 0 ? (
+                      <Select
+                        value={draft.satCtaOri}
+                        onValueChange={v => {
+                          const cuenta = cuentasBancariasCliente.find(c => c.sat_cta_ori === v);
+                          if (cuenta) {
+                            setDraft(prev => ({
+                              ...prev,
+                              satCtaOri: cuenta.sat_cta_ori,
+                              bancoId: cuenta.banco_id,
+                              bancoDescr: cuenta.banco_descr,
+                            }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar cuenta" /></SelectTrigger>
+                        <SelectContent>
+                          {cuentasBancariasCliente.map(c => (
+                            <SelectItem key={c.sat_cta_ori} value={c.sat_cta_ori}>
+                              {c.sat_cta_ori} — {c.banco_descr}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input className="h-8 text-sm" value={draft.satCtaOri} onChange={e => setDraftField("satCtaOri", e.target.value)} placeholder="No. de cuenta" />
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Banco destino (empresa)</Label>
+                    <div className="flex gap-2">
+                      <Input className="h-8 text-sm w-20" value={draft.satBancoDest} onChange={e => setDraftField("satBancoDest", e.target.value)} placeholder="Clave" />
+                      <Input className="h-8 text-sm flex-1" value={draft.satBancoDestDescr} onChange={e => setDraftField("satBancoDestDescr", e.target.value)} placeholder="Nombre del banco" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cuenta destino (empresa)</Label>
+                    <Input className="h-8 text-sm" value={draft.satCtaDest} onChange={e => setDraftField("satCtaDest", e.target.value)} placeholder="No. de cuenta" />
+                  </div>
                 </div>
               </div>
             </section>

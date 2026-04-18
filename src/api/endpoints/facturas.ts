@@ -322,6 +322,15 @@ export interface FacturaPayload {
   // PUE integrado (opcional)
   cuenta_cobro_id?: string;
   referencia_pago?: string;
+  // PUE — pago integrado, solo en Add
+  "generar_ingreso[importe]"?: string;
+  "generar_ingreso[referencia_pago]"?: string;
+  "generar_ingreso[banco_id]"?: string;
+  "generar_ingreso[banco_descr]"?: string;
+  "generar_ingreso[sat_cta_ori]"?: string;
+  "generar_ingreso[sat_cta_dest]"?: string;
+  "generar_ingreso[sat_banco_dest]"?: string;
+  "generar_ingreso[sat_banco_dest_descr]"?: string;
   // Conceptos
   conceptos: ConceptoPayload[];
   // Complementos (siempre presentes, vacíos en Fase 4)

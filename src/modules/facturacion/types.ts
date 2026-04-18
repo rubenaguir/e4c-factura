@@ -90,6 +90,13 @@ export interface FacturaDraft {
   numRegIdTrib: string;
   cuentaCobroId: string;
   referenciaPago: string;
+  importePago: string;
+  bancoId: string;
+  bancoDescr: string;
+  satCtaOri: string;
+  satCtaDest: string;
+  satBancoDest: string;
+  satBancoDestDescr: string;
   conceptos: DraftConcepto[];
 }
 

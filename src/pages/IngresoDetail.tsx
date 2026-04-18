@@ -562,7 +562,7 @@ export default function IngresoDetail() {
           <div className="p-3 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Banco receptor (empresa)</Label>
+              <Label>Banco origen (cliente)</Label>
               <div className="flex gap-2">
                 <Input className="w-20" placeholder="Clave" value={form.bancoId} onChange={e => form.setBancoId(e.target.value)} disabled={readonly} />
                 <Input className="flex-1" placeholder="Nombre del banco" value={form.bancoDescr} onChange={e => form.setBancoDescr(e.target.value)} disabled={readonly} />
@@ -570,12 +570,12 @@ export default function IngresoDetail() {
             </div>
 
             <div className="space-y-1">
-              <Label>Cuenta destino (empresa)</Label>
-              <Input placeholder="No. de cuenta" value={form.satCtaDest} onChange={e => form.setSatCtaDest(e.target.value)} disabled={readonly} />
+              <Label>Cuenta origen (cliente)</Label>
+              <Input placeholder="No. de cuenta" value={form.satCtaOri} onChange={e => form.setSatCtaOri(e.target.value)} disabled={readonly} />
             </div>
 
             <div className="space-y-1">
-              <Label>Banco destino</Label>
+              <Label>Banco destino (empresa)</Label>
               <div className="flex gap-2">
                 <Input className="w-20" placeholder="Clave" value={form.satBancoDest} onChange={e => form.setSatBancoDest(e.target.value)} disabled={readonly} />
                 <Input className="flex-1" placeholder="Nombre del banco" value={form.satBancoDestDescr} onChange={e => form.setSatBancoDestDescr(e.target.value)} disabled={readonly} />
@@ -583,8 +583,8 @@ export default function IngresoDetail() {
             </div>
 
             <div className="space-y-1">
-              <Label>Cuenta origen (cliente)</Label>
-              <Input placeholder="No. de cuenta" value={form.satCtaOri} onChange={e => form.setSatCtaOri(e.target.value)} disabled={readonly} />
+              <Label>Cuenta destino (empresa)</Label>
+              <Input placeholder="No. de cuenta" value={form.satCtaDest} onChange={e => form.setSatCtaDest(e.target.value)} disabled={readonly} />
             </div>
           </div>
           </div>

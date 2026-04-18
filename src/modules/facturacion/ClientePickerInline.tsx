@@ -29,7 +29,7 @@ export interface ClientePickerInlineProps {
   receptorRfc: string;
   readonly: boolean;
   onSelect: (client: ClienteLov) => void;
-  onPresetLoaded: (f: FacturaCompleta) => void;
+  onPresetLoaded: (f: FacturaCompleta, clienteId: string) => void;
   regimenFiscalOptions: { value: string; label: string }[];
 }
 
@@ -79,7 +79,7 @@ function ClientePickerInline({
       const lov = await validateLovFieldClientes(id);
       onSelect(lov);
       const preset = await loadPresetClientData(id).catch(() => null);
-      if (preset) onPresetLoaded(preset);
+      if (preset) onPresetLoaded(preset, id);
     } catch { /* ignorar */ }
   };
 
