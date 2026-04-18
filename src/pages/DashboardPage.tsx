@@ -52,6 +52,22 @@ const INITIAL_STATE: DashboardState = {
   cancelaciones: LOADING,
 };
 
+function buildPeriodLabels() {
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("es-MX", opts).format(d);
+  const mesActualLabel = fmt(now, { month: "long", year: "numeric" });
+  const mesAnteriorLabel = fmt(prev, { month: "long" });
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  return {
+    mesActualLabel: capitalize(mesActualLabel),
+    mesAnteriorLabel: capitalize(mesAnteriorLabel),
+  };
+}
+
+const { mesActualLabel, mesAnteriorLabel } = buildPeriodLabels();
+
 export default function DashboardPage() {
   const [state, setState] = useState<DashboardState>(() => {
     const cache = readCache();
@@ -170,10 +186,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 space-y-4 max-w-lg mx-auto pb-20 md:pb-4">
+      <p className="text-xs text-muted-foreground">
+        {mesActualLabel} · vs {mesAnteriorLabel}
+      </p>
       <MetricCard
         label="Monto facturado"
         mesActual={state.facturado.data?.mes_actual ?? null}
         mesAnterior={state.facturado.data?.mes_anterior ?? null}
+        mesAnteriorLabel={mesAnteriorLabel}
         status={state.facturado.status}
         error={state.facturado.error ?? undefined}
         onRetry={retryFacturado}
@@ -190,6 +210,7 @@ export default function DashboardPage() {
         label="Ingresos registrados"
         mesActual={state.ingresos.data?.mes_actual ?? null}
         mesAnterior={state.ingresos.data?.mes_anterior ?? null}
+        mesAnteriorLabel={mesAnteriorLabel}
         status={state.ingresos.status}
         error={state.ingresos.error ?? undefined}
         onRetry={retryIngresos}

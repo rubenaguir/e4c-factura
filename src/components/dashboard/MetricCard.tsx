@@ -8,16 +8,17 @@ function formatMXN(value: string): string {
   return mxn.format(parseFloat(value));
 }
 
-function Delta({ mesActual, mesAnterior }: { mesActual: string; mesAnterior: string }) {
+function Delta({ mesActual, mesAnterior, mesAnteriorLabel }: { mesActual: string; mesAnterior: string; mesAnteriorLabel?: string }) {
   const actual = parseFloat(mesActual);
   const anterior = parseFloat(mesAnterior);
   if (anterior === 0) return null;
   const pct = ((actual - anterior) / anterior) * 100;
-  if (pct === 0) return <span className="text-sm text-muted-foreground">= 0% vs mes anterior</span>;
+  const vsLabel = `vs ${mesAnteriorLabel ?? "mes anterior"}`;
+  if (pct === 0) return <span className="text-sm text-muted-foreground">= 0% {vsLabel}</span>;
   const positive = pct > 0;
   return (
     <span className={`text-sm font-medium ${positive ? "text-green-600" : "text-red-600"}`}>
-      {positive ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}% vs mes anterior
+      {positive ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}% {vsLabel}
     </span>
   );
 }
@@ -26,6 +27,7 @@ export interface MetricCardProps {
   label: string;
   mesActual: string | null;
   mesAnterior: string | null;
+  mesAnteriorLabel?: string;
   status: "idle" | "loading" | "success" | "error";
   error?: string;
   onRetry: () => void;
@@ -35,6 +37,7 @@ export default function MetricCard({
   label,
   mesActual,
   mesAnterior,
+  mesAnteriorLabel,
   status,
   error,
   onRetry,
@@ -61,7 +64,7 @@ export default function MetricCard({
           <div className="space-y-1">
             <p className="text-2xl font-bold">{mesActual ? formatMXN(mesActual) : "—"}</p>
             {mesActual && mesAnterior && (
-              <Delta mesActual={mesActual} mesAnterior={mesAnterior} />
+              <Delta mesActual={mesActual} mesAnterior={mesAnterior} mesAnteriorLabel={mesAnteriorLabel} />
             )}
           </div>
         )}
