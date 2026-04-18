@@ -84,6 +84,7 @@ React 19 · Vite 5 · TypeScript 5 · React Router v6 · Tailwind 3 · shadcn/ui
 | Decisiones de diseño (por qué se eligió X) | `docs/spec/08-decisions.md` |
 | Contratos backend ingresos (ejemplos request/response) | `docs/spec/09-sv3-contracts-ingresos.md` |
 | **Pago integrado PUE en FacturaDetail** (pendiente backend) | `docs/spec/10-pago-integrado-pue.md` |
+| **Dashboard de indicadores** (Fase 7) | `docs/spec/12-dashboard.md` |
 
 ### Qué leer por fase
 
@@ -93,3 +94,4 @@ React 19 · Vite 5 · TypeScript 5 · React Router v6 · Tailwind 3 · shadcn/ui
 - **Fase 4** (facturación): `03-api-client.md` + `05-screens.md` completos
 - **Fase 5** (ingresos): `03-api-client.md` §Ingresos + `05-screens.md` §IngresoDetail
 - **Fase 6** (deploy): `06-pwa-layout.md`
+- **Fase 7** (dashboard): `12-dashboard.md`

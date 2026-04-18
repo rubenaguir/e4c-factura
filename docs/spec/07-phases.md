@@ -124,15 +124,32 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ---
 
-## Fase 7 — Mejoras iterativas
+## Fase 7 — Dashboard de indicadores ⚠️ Pendiente
+
+**Entregable:** pantalla de inicio con 4 tarjetas de KPIs operativos del mes.
+
+1. 4 endpoints nuevos en backend: `ventas:facturas_venta_33:dashboard_pwa:Get*`
+2. `src/endpoints/dashboard.ts`
+3. `src/lib/dashboardCache.ts` — helpers SWR manual sobre `localStorage["e4c_dashboard"]`
+4. `src/pages/DashboardPage.tsx` — disparo retrasado 1.5 s + `Promise.allSettled`
+5. `src/components/dashboard/MetricCard.tsx` + `CancelacionesList.tsx`
+6. Integrar ruta `/dashboard` como índice del shell; actualizar `BottomNav`/`Sidebar`
+
+**Leer antes:** `docs/spec/12-dashboard.md`
+
+**Éxito:** al abrir la app y navegar a Facturas antes de 1.5 s no se lanza ninguna petición al dashboard; en visitas subsecuentes los datos aparecen instantáneos desde caché.
+
+---
+
+## Fase 8 — Mejoras iterativas
 
 - Notificaciones push (MQTT/WebPush)
 - CRUD completo de productos (pendiente agent backend)
 - Contactos de cliente y expedientes
-- Dashboards móviles
 - Botón Eliminar prefactura (pendiente de Fase 4)
 - `LoadEstatusSAT` en `FacturaDetail` al cargar facturas timbradas
 - Runtime caching Workbox (si no se completa en Fase 6)
+- Dashboard: drill-down al tap de una tarjeta
 
 ---
 
