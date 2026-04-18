@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, ChevronDown, ChevronUp,
-  Loader2, FileText, Mail, MoreHorizontal, UserPlus, PackagePlus,
+  Loader2, FileText, Mail, MoreHorizontal, UserPlus, PackagePlus, FilePlus2,
 } from "lucide-react";
 import { useFacturas } from "@/context/FacturasContext";
 import { useCatalogos } from "@/context/CatalogosContext";
@@ -183,6 +183,26 @@ export default function FacturaDetail() {
     if (f.metodo_pago === "PUE") loadDatosBancarios(clienteId);
   };
 
+  // ── Nuevo ───────────────────────────────────────────────────────────────────
+
+  const handleNuevo = () => {
+    if (isNew) {
+      setDraft(newDraft());
+      setComprobantOpen(true);
+      setDivisaOpen(false);
+      setSwipedIdx(null);
+      setEditConcepto(null);
+      setCancelOpen(false);
+      setMailOpen(false);
+      setMailSent(false);
+      setMailErr(null);
+      setPdfSheet(PDF_SHEET_CLOSED);
+      setCuentasBancariasCliente([]);
+    } else {
+      navigate("/facturas/nuevo");
+    }
+  };
+
   // ── Save / stamp ────────────────────────────────────────────────────────────
 
   const doSave = async (action: "prefactura" | "timbrar") => {
@@ -285,8 +305,10 @@ export default function FacturaDetail() {
           <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </button>
-          {/* <div> */}
-            <h1 className="text-base font-semibold flex-1 truncate">{title}</h1>
+          <h1 className="text-base font-semibold flex-1 truncate">{title}</h1>
+          <button type="button" title="Nueva factura" className="text-muted-foreground hover:text-foreground" onClick={handleNuevo}>
+            <FilePlus2 className="h-5 w-5" />
+          </button>
             {draft.estatus && (
               <div>
                 {draft.estatus === "P" && <Badge variant="secondary" className="text-[11px]">Prefactura</Badge>}

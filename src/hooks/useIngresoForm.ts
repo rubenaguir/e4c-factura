@@ -183,6 +183,20 @@ export function useIngresoForm() {
     return null;
   };
 
+  const reset = () => {
+    setClienteId(""); setClienteNombre(""); setClienteRfc("");
+    setClienteCP(""); setClienteRegimen(""); setLoadingCliente(false);
+    setSearchQuery(""); setSearchResults([]); setShowDrop(false); setSearching(false);
+    setCuentasCobrar([]); setSelectedCuenta(null); setLoadingCuentas(false);
+    setFechaPagoIso(todayIso());
+    setFormaPagoId(""); setFormaPagoDescr("");
+    setMonedaId("MXN"); setTipoCambio("1");
+    setImporte(""); setDescripcion(""); setReferencia(""); setNoAutorizacion("");
+    setBancoId(""); setBancoDescr("");
+    setSatCtaOri(""); setSatCtaDest("");
+    setSatBancoDest(""); setSatBancoDestDescr("");
+  };
+
   return {
     // Client
     clienteId, clienteNombre, clienteRfc, clienteCP, clienteRegimen, loadingCliente,
@@ -214,5 +228,6 @@ export function useIngresoForm() {
     clearCliente,
     handleCuentaSelect,
     validate,
+    reset,
   };
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Loader2, FileText, Mail,
+  ArrowLeft, Loader2, FileText, Mail, FilePlus2,
 } from "lucide-react";
 import { useIngresos } from "@/context/IngresosContext";
 import { useCatalogos } from "@/context/CatalogosContext";
@@ -297,6 +297,19 @@ export default function IngresoDetail() {
   const screenState = deriveScreenState(ingreso);
   const readonly = screenState !== "nueva";
 
+  const handleNuevo = () => {
+    if (isNew) {
+      form.reset();
+      setIngreso(null);
+      setLoadError(null);
+      setMailNombre("");
+      setMailCorreo("");
+      setCancelMotivo("02");
+    } else {
+      navigate("/ingresos/nuevo");
+    }
+  };
+
   // ---------------------------------------------------------------------------
   // Loading / Error states
   // ---------------------------------------------------------------------------
@@ -343,8 +356,11 @@ export default function IngresoDetail() {
         </Button> */}
         <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => navigate("/ingresos")}>
           <ArrowLeft className="h-5 w-5" />
-        </button>        
+        </button>
         <h1 className="text-base font-semibold flex-1 truncate">{title}</h1>
+        <button type="button" title="Nuevo ingreso" className="text-muted-foreground hover:text-foreground" onClick={handleNuevo}>
+          <FilePlus2 className="h-5 w-5" />
+        </button>
         {ingreso && (
           <Badge variant={screenState === "cancelada" ? "destructive" : ingreso.uuid ? "default" : "secondary"}
             className={ingreso.uuid && screenState !== "cancelada" ? "bg-green-600 hover:bg-green-700" : ""}>
