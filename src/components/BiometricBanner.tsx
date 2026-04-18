@@ -36,10 +36,15 @@ export function BiometricBanner() {
 
   return (
     <div className="fixed bottom-16 inset-x-0 z-40 px-4 pb-2 pointer-events-none">
-      <div className="pointer-events-auto mx-auto max-w-sm rounded-xl border border-border bg-background/95 shadow-lg backdrop-blur-sm p-3 flex items-center gap-3">
-        <Fingerprint className="h-5 w-5 shrink-0 text-primary" />
-        <p className="flex-1 text-sm text-foreground">¿Activar acceso con huella?</p>
-        <Button size="sm" onClick={handleActivar} disabled={loading} className="shrink-0">
+      <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border-2 border-primary bg-primary/10 shadow-xl backdrop-blur-sm p-4 flex items-center gap-3">
+        <div className="shrink-0 rounded-full bg-primary/20 p-2">
+          <Fingerprint className="h-6 w-6 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground leading-tight">¿Activar acceso con huella?</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Entra más rápido sin contraseña</p>
+        </div>
+        <Button size="sm" onClick={handleActivar} disabled={loading} className="shrink-0 font-semibold">
           Activar
         </Button>
         <button

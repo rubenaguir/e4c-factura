@@ -30,6 +30,7 @@ export interface ClientePickerInlineProps {
   readonly: boolean;
   onSelect: (client: ClienteLov) => void;
   onPresetLoaded: (f: FacturaCompleta, clienteId: string) => void;
+  onLoadingChange?: (loading: boolean) => void;
   regimenFiscalOptions: { value: string; label: string }[];
 }
 
@@ -40,7 +41,7 @@ export interface ClientePickerInlineHandle {
 export const ClientePickerInline = forwardRef<ClientePickerInlineHandle, ClientePickerInlineProps>(
 function ClientePickerInline({
   clienteId, receptorNombre, receptorRfc, readonly,
-  onSelect, onPresetLoaded, regimenFiscalOptions,
+  onSelect, onPresetLoaded, onLoadingChange, regimenFiscalOptions,
 }: ClientePickerInlineProps, ref) {
   const { loadPresetClientData } = useFacturas();
   const [query, setQuery] = useState("");
@@ -75,12 +76,14 @@ function ClientePickerInline({
 
   const handleSelectId = async (id: string) => {
     setShowDrop(false); setQuery("");
+    onLoadingChange?.(true);
     try {
       const lov = await validateLovFieldClientes(id);
       onSelect(lov);
       const preset = await loadPresetClientData(id).catch(() => null);
       if (preset) onPresetLoaded(preset, id);
     } catch { /* ignorar */ }
+    finally { onLoadingChange?.(false); }
   };
 
   const handleInlineAdd = async () => {

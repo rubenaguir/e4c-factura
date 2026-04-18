@@ -52,6 +52,7 @@ export default function FacturaDetail() {
   const [divisaOpen, setDivisaOpen] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [clienteLoading, setClienteLoading] = useState(false);
 
   const [editConcepto, setEditConcepto] = useState<{ c: DraftConcepto; idx: number } | null>(null);
   const clientePickerRef = useRef<ClientePickerInlineHandle>(null);
@@ -322,6 +323,12 @@ export default function FacturaDetail() {
               )}
             </div>
             <div className="p-3 space-y-3">
+              {clienteLoading ? (
+                <div className="rounded-lg border p-3 space-y-2 bg-muted/20">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              ) : (
               <ClientePickerInline
                 ref={clientePickerRef}
                 clienteId={draft.clienteId}
@@ -330,9 +337,19 @@ export default function FacturaDetail() {
                 readonly={isReadOnly}
                 onSelect={handleClientSelect}
                 onPresetLoaded={handlePresetLoaded}
+                onLoadingChange={setClienteLoading}
                 regimenFiscalOptions={regimenFiscal.options}
               />
-              {draft.clienteId && (
+              )}
+              {clienteLoading && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Skeleton className="h-7 w-full" />
+                  <Skeleton className="h-7 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              )}
+              {draft.clienteId && !clienteLoading && (
                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                   <div>
                     <span className="font-medium text-foreground">Uso CFDI: </span>
