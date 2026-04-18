@@ -10,6 +10,7 @@ import ClienteDetail from "@/pages/ClienteDetail";
 import ProductosPage from "@/pages/ProductosPage";
 import ProductoDetail from "@/pages/ProductoDetail";
 import FacturaDetail from "@/pages/FacturaDetail";
+import DashboardPage from "@/pages/DashboardPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -19,7 +20,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 function RedirectIfAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  if (isAuthenticated) return <Navigate to="/facturas" replace />;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -40,7 +41,8 @@ const router = createHashRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/facturas" replace /> },
+      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { path: "dashboard", element: <DashboardPage /> },
       { path: "facturas", element: <FacturasPage /> },
       { path: "facturas/nuevo", element: <FacturaDetail /> },
       { path: "facturas/:serie/:folio", element: <FacturaDetail /> },

@@ -4,7 +4,7 @@ import { navItems } from "./navItems";
 export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-background md:hidden">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}

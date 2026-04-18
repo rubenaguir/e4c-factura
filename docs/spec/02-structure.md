@@ -112,42 +112,54 @@ src/
 
 ---
 
-## Reglas SOLID aplicadas (módulo facturación)
+## Reglas SOLID — todo el proyecto
 
-Patrón adoptado al refactorizar `FacturaDetail.tsx` (1 667 líneas → ≈ 380 + módulos).
-Aplicar el mismo patrón a nuevos módulos que superen las 400 líneas.
+Principios aplicados a todas las capas. Originados en la refactorización de `FacturaDetail.tsx`
+(1 667 líneas → ≈ 380 + módulos); extender el mismo patrón a cualquier archivo que supere las
+**400 líneas** o que mezcle más de una responsabilidad.
 
 ### S — Single Responsibility
 
-Cada archivo tiene **una sola razón para cambiar**:
+Cada archivo tiene **una sola razón para cambiar**. Guía por capa:
 
-| Archivo | Razón de cambio |
+| Capa | Razón de cambio permitida |
 |---|---|
-| `types.ts` | Estructura del draft local |
-| `facturaUtils.ts` | Lógica de cálculo (impuestos, fechas) |
-| `facturaMappers.ts` | Reglas de mapeo draft ↔ API payload |
-| `ClientePickerInline.tsx` | UX del selector de cliente |
-| `ProductoPickerInline.tsx` | UX del selector de producto |
-| `ConceptoSheet.tsx` | Formulario de edición de concepto |
-| `CancelDialog.tsx` | Diálogo de cancelación SAT |
-| `MailDialog.tsx` | Diálogo de envío por correo |
-| `FacturaDetail.tsx` | Orquestación y estado principal |
+| `api/client.ts` | Transporte HTTP y manejo de `forceLogout` |
+| `api/endpoints/*.ts` | Contratos de un único módulo de negocio |
+| `context/*Context.tsx` | Estado y operaciones de un único dominio |
+| `hooks/useXxxForm.ts` | Estado y lógica de formulario de un Detail |
+| `modules/xxx/types.ts` | Estructura de tipos del draft local |
+| `modules/xxx/xxxUtils.ts` | Lógica de cálculo pura (sin efectos) |
+| `modules/xxx/xxxMappers.ts` | Mapeo draft ↔ payload de API |
+| `modules/xxx/XxxPicker.tsx` | UX de un único selector inline |
+| `pages/XxxDetail.tsx` | Orquestación y estado principal |
+
+Cuando un archivo mezcla más de una razón, extraer a `utils`, `mappers` o sub-componente.
 
 ### O — Open/Closed
 
-- Los mappers (`buildPayload`, `buildConceptoPayload`) se extienden añadiendo campos al tipo,
-  sin modificar la UI.
-- `InlineModal` es abierto a nuevos contenidos vía `children`; cerrado a cambios de layout.
+- Los mappers (`buildPayload`, etc.) se extienden añadiendo campos al tipo, sin tocar la UI.
+- Los componentes contenedor (`InlineModal`, `AppShell`) son abiertos a nuevos `children`;
+  cerrados a cambios de layout interno.
+- Los archivos `api/endpoints/*.ts` son cerrados entre sí: un endpoint de facturas no importa
+  nada de ingresos ni clientes.
 
 ### I — Interface Segregation
 
-- Los `Props` de cada sub-componente son mínimos y acotados a lo que ese componente necesita.
-- `FacturaDetail` no expone su estado interno; los sub-componentes reciben sólo lo necesario
-  por props.
+- Los `Props` de cada componente son mínimos: solo lo que ese componente necesita.
+- Las páginas (`XxxDetail`) no exponen su estado interno; los sub-componentes reciben solo
+  lo estrictamente necesario por props.
+- Los contextos exponen solo lo que sus consumidores usan directamente — no re-exportar el
+  estado interno completo.
+- Los hooks (`useIngresoForm`, `useAuth`) exponen una interfaz estrecha; el componente
+  consumidor ignora los detalles de implementación.
 
 ### D — Dependency Inversion
 
-- Los sub-componentes (`ClientePickerInline`, `ProductoPickerInline`) reciben callbacks
-  (`onSelect`, `onAdd`) en lugar de mutar estado directamente.
-- `FacturaDetail` controla el estado; los sub-componentes son stateless respecto al draft
-  principal.
+- **Regla de Detail pages:** toda página de edición (`XxxDetail`) debe delegar su estado y
+  lógica a un hook `useXxxForm`. La página se limita a orquestar renders y callbacks.
+  - Implementado: `useIngresoForm` → `IngresoDetail`
+  - Deuda técnica pendiente: `useFacturaForm`, `useClienteForm`, `useProductoForm`
+- Los sub-componentes (`ClientePickerInline`, `ProductoPickerInline`, pickers futuros) reciben
+  callbacks (`onSelect`, `onAdd`) en lugar de mutar estado directamente.
+- Los endpoints reciben parámetros; nunca leen contexto ni estado global por sí mismos.

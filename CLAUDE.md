@@ -37,6 +37,8 @@ Endpoint único: `POST http://localhost/SisnetV3Desarrollo/php/interfase_jwt.php
 
 9. **Mensajes del backend, nunca hardcodeados.** Errores → `response.msg ?? response.Message ?? "Error desconocido"`. Éxito en mutaciones → `response.msg`. Solo usar texto fijo si el backend no devuelve ninguno de estos campos.
 
+10. **SOLID en todo el proyecto.** (a) Ningún archivo supera 400 líneas — extraer a `utils`, `mappers` o sub-componente. (b) Toda `XxxDetail` page delega estado y lógica a un hook `useXxxForm` — la page solo orquesta renders. (c) Props mínimos: cada componente/hook recibe solo lo que necesita. (d) Sub-componentes reciben callbacks, nunca mutan estado externo directamente. Ver detalle en `docs/spec/02-structure.md §Reglas SOLID`.
+
 ---
 
 ## Patrón de llamada al backend
