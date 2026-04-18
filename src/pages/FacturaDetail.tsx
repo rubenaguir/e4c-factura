@@ -389,7 +389,14 @@ export default function FacturaDetail() {
                   </div>
                   <div>
                     <span className="font-medium text-foreground">Régimen: </span>
-                    <span>{draft.receptorRegimenFiscalId}</span>
+                    {!isReadOnly ? (
+                      <Select value={draft.receptorRegimenFiscalId} onValueChange={v => setDraftField("receptorRegimenFiscalId", v)}>
+                        <SelectTrigger className="h-7 text-xs mt-0.5"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {regimenFiscal.options.map(o => <SelectItem key={o.value} value={o.value}>{o.value} – {o.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : <span>{draft.receptorRegimenFiscalId}</span>}
                   </div>
                   <div>
                     <span className="font-medium text-foreground">Código Postal: </span>
