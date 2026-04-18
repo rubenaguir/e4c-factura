@@ -10,7 +10,7 @@
 ## AppShell
 
 **Desktop:** Sidebar (240px, colapsable a 60px) + TopBar + `<Outlet />`.
-**Mobile:** TopBar con hamburguesa + `<Outlet />` + BottomNav (4 tabs: Facturas · Ingresos · Clientes · Productos).
+**Mobile:** TopBar con hamburguesa + `<Outlet />` + BottomNav (4 tabs: Facturas · Ingresos · Clientes · Productos) + `MobileDrawer` (drawer lateral para navegación).
 
 ## Tablas en mobile
 
@@ -35,7 +35,7 @@ Tablas con >3 columnas → **card list**:
 {
   "name": "E4C Facturación",
   "short_name": "E4C",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "theme_color": "#0f172a",
   "background_color": "#ffffff",
@@ -46,14 +46,16 @@ Tablas con >3 columnas → **card list**:
 }
 ```
 
+> `start_url` es `"./"` (relativa) para compatibilidad con el `base: ""` del build. Esto difiere del `"/"` que se mostraba en el spec original.
+
 ## Service Worker (Workbox / VitePWA)
 
-- **Precaché:** assets estáticos del build.
-- **Runtime caching:**
-  - LOVs (`Sistem:Lov:Lov:*`) → `StaleWhileRevalidate`, TTL 24h.
+- **Precaché:** assets estáticos del build (`globPatterns`).
+- **Runtime caching:** ⚠️ **Pendiente implementar** — no está configurado en `vite.config.ts`. El diseño previsto es:
+  - LOVs (`Lov:Lov:Lov:*`) → `StaleWhileRevalidate`, TTL 24h.
   - `Search`/`Load` de lecturas → `NetworkFirst`, timeout 5s; fallback caché offline.
-  - **Mutaciones (`Add`, `Update`, `Delete`, `Stamp`, `Cancel*`) → NO caché, NO Background Sync.**
-- Banner de actualización con `onNeedRefresh` de `vite-plugin-pwa/react`.
+  - **Mutaciones (`Add`, `Update`, `Stamp`, `Cancel*`) → NO caché, NO Background Sync.**
+- Banner de actualización implementado via `PwaUpdateBanner` con `onNeedRefresh` de `vite-plugin-pwa/react`.
 
 ## Instalabilidad (A2HS)
 
@@ -65,13 +67,16 @@ Hook `usePwaInstall` captura `beforeinstallprompt`. Botón "Instalar app" en Top
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: '/',
+  base: "",   // base vacía para deploy en subdirectorio
   plugins: [
     react(),
     VitePWA({
       registerType: 'prompt',
       manifest: { /* ver arriba */ },
-      workbox: { /* ver Service Worker */ }
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        // runtimeCaching pendiente (Fase 6)
+      }
     })
   ]
 });

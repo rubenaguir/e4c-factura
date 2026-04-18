@@ -1,6 +1,6 @@
 # §10 Plan de Implementación por Fases
 
-## Fase 1 — Infraestructura base
+## Fase 1 — Infraestructura base ✅ Completa
 
 **Entregable:** app que arranca, hace login JWT, shell navegable, PWA instalable.
 
@@ -9,9 +9,16 @@
 3. Instalar `react-router-dom@6`, `react-hook-form`, `zod`, `lucide-react`, `vite-plugin-pwa`, `@tanstack/react-virtual`
 4. `src/api/client.ts`
 5. `AuthContext` + `LoginPage` + guard en router
-6. `AppShell` + `Sidebar` + `TopBar` + `BottomNav`
+6. `AppShell` + `Sidebar` + `TopBar` + `BottomNav` + `MobileDrawer`
 7. Manifest + SW (precaché solo)
 8. Verificar login contra backend real
+
+**Implementado adicionalmente:**
+- Login en 2 pasos: `SearchSucursalesUsuario` (paso 1) → `Login` con sucursal seleccionada (paso 2)
+- Auto-refresh de JWT al 80% del lifetime (`ValidateSession`)
+- Autenticación biométrica (WebAuthn) — `BiometricBanner`, `src/lib/biometric.ts`, `src/lib/biometricStorage.ts`
+- `SnackbarContext` global para notificaciones
+- `PwaUpdateBanner` para actualizaciones del SW
 
 **Leer antes:** `docs/spec/03-api-client.md`, `docs/spec/04-state.md`, `docs/spec/06-pwa-layout.md`
 
@@ -19,7 +26,7 @@
 
 ---
 
-## Fase 2 — Catálogo de Clientes
+## Fase 2 — Catálogo de Clientes ✅ Completa
 
 **Entregable:** CRUD completo de clientes.
 
@@ -35,7 +42,7 @@
 
 ---
 
-## Fase 3 — Catálogo de Productos
+## Fase 3 — Catálogo de Productos ✅ Completa
 
 **Entregable:** CRUD completo de productos con búsqueda virtualizada.
 
@@ -52,7 +59,7 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ---
 
-## Fase 4 — Facturación
+## Fase 4 — Facturación ✅ Completa
 
 **Entregable:** registro de factura completa (pre y con timbre).
 
@@ -68,7 +75,11 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
    - Moneda/TC
    - Pago integrado (PUE)
    - Guardar Prefactura / Timbrar / Cancelar
-6. PDF download
+6. PDF en visor interno (`PdfSheet`)
+
+**Implementado adicionalmente:**
+- Pago integrado PUE completo (6 campos bancarios) — ver `docs/spec/10-pago-integrado-pue.md`
+- ⚠️ **Pendiente:** botón Eliminar prefactura
 
 **Leer antes:** `docs/spec/03-api-client.md`, `docs/spec/05-screens.md` (toda la sección)
 
@@ -76,7 +87,7 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ---
 
-## Fase 5 — Ingresos / Pagos
+## Fase 5 — Ingresos / Pagos ✅ Completa
 
 **Entregable:** registro de pago (REP) aplicado a una factura.
 
@@ -93,18 +104,21 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
    - Botones según estado: Guardar / Timbrar / PDF / Correo / Cancelar
 5. Payload `Add`: solo el registro `cuentas_cobrar[0][...]` de la factura seleccionada — no enviar registros con `importe=0`
 
+**Implementado adicionalmente:**
+- `useIngresoForm` hook que centraliza todo el estado de `IngresoDetail`
+
 **Leer antes:** `docs/spec/03-api-client.md` §Ingresos, `docs/spec/05-screens.md` §IngresoDetail
 
 **Éxito:** registrar un pago aplicado a una factura, timbrar REP (PPD automático / PUE manual), PDF y correo funcionales.
 
 ---
 
-## Fase 6 — PWA en producción
+## Fase 6 — PWA en producción ⚠️ Pendiente
 
 1. `vite build`
 2. Despliegue en raiz Apache (`/`)
 3. QA Chrome desktop + Android + iOS Safari
-4. Activar runtime caching de lecturas
+4. Activar runtime caching de lecturas (actualmente solo precaché — ver `docs/spec/06-pwa-layout.md` §Service Worker)
 
 **Leer antes:** `docs/spec/06-pwa-layout.md`
 
@@ -116,6 +130,9 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 - CRUD completo de productos (pendiente agent backend)
 - Contactos de cliente y expedientes
 - Dashboards móviles
+- Botón Eliminar prefactura (pendiente de Fase 4)
+- `LoadEstatusSAT` en `FacturaDetail` al cargar facturas timbradas
+- Runtime caching Workbox (si no se completa en Fase 6)
 
 ---
 

@@ -17,7 +17,7 @@
   /clientes/:id                     → ClienteDetail
   /productos                        → ProductosPage
   /productos/nuevo                  → ProductoDetail
-  /productos/:sku                   → ProductoDetail
+  /productos/:id                    → ProductoDetail  ← param es :id, no :sku
 ```
 
 Guard en `AppShell`: `!isAuthenticated` → redirect `/login`.
@@ -73,8 +73,12 @@ Layout de secciones apiladas con sticky bottom bar. Desktop añade columnas pero
 │  ╚════════════════════════╝ │
 │                             │
 │  ╔══ PAGO (solo PUE) ═════╗ │  oculto si PPD
-│  ║ Cuenta cobro: [...]    ║ │
+│  ║ Importe:      [...]    ║ │  precargado del total de la factura
 │  ║ Referencia:   [...]    ║ │
+│  ║ Banco origen: [clave]  ║ │  clave + nombre (banco del cliente)
+│  ║ Cta. origen:  [select] ║ │  select de historial o input libre
+│  ║ Banco destino:[clave]  ║ │  clave + nombre (banco de la empresa)
+│  ║ Cta. destino: [...]    ║ │  cuenta de la empresa
 │  ╚════════════════════════╝ │
 │                             │
 ├─────────────────────────────┤
@@ -160,16 +164,31 @@ En la sección Totales se muestra **un renglón por cada combinación única de 
 ### Moneda y tipo de cambio
 
 - Default MXN, TC = 1 (ocultos hasta expandir "Divisa").
-- Al cambiar a USD/EUR → input TC manual + botón "Sugerir TC del día" (LOV).
+- Al cambiar a USD/EUR → el TC se **auto-llena** desde el campo `tipo_cambio` del registro de moneda en `CatalogosContext` (cargado via `Lov:Lov:Lov:LoadLovFieldMonedasEmpresa`). El campo queda editable para ajuste manual.
+- ⚠️ **Pendiente:** botón "Sugerir TC del día" descrito en versiones anteriores del spec no está implementado (`LoadLovFieldTipoCambio` tampoco está implementado).
 - **Al cambiar moneda → solo filtrar listas de precios disponibles para esa moneda. NO modificar `precio_unitario` de los conceptos existentes.**
 - **La lista de precios es por concepto, no por factura.** Cada concepto tiene su propio selector de lista de precios (visible solo si hay más de una). Al cambiar la lista de un concepto → actualizar únicamente el `precio_unitario` de ese concepto usando `precios[]` del producto (match por `lista_precios_id`). Los demás conceptos no se tocan.
 - `precio_unitario` siempre editable por el usuario; se interpreta en la moneda activa de la factura.
 - El campo `lista_precios_id` del root del payload refleja la lista del primer concepto (o vacío); el authoritative es el `lista_precios_id` dentro de cada concepto.
 
-### Pago integrado
+### Pago integrado (PUE)
 
-- PUE + "Integrar datos de pago" → incluir `cuenta_cobro_id`, `forma_pago`, `referencia_pago` en el Add.
-- PPD → panel de pago deshabilitado (pago va por REP en Ingresos).
+Al seleccionar método de pago **PUE**, se muestra la sección de pago con estos campos:
+
+| Campo | `FacturaDraft` | Fuente inicial |
+|---|---|---|
+| Importe | `importePago` | Precargado con el total de la factura |
+| Referencia | `referenciaPago` | Manual |
+| Banco origen (cliente) | `bancoId` + `bancoDescr` | `validateLovFieldClientesIngresos` al seleccionar cliente |
+| Cuenta origen (cliente) | `satCtaOri` | Select desde `SearchCuentasBancariasCliente` o input libre |
+| Banco destino (empresa) | `satBancoDest` + `satBancoDestDescr` | `validateLovFieldClientesIngresos` al seleccionar cliente |
+| Cuenta destino (empresa) | `satCtaDest` | `validateLovFieldClientesIngresos` al seleccionar cliente |
+
+Los datos bancarios del cliente se obtienen con `tesoreria:registro_ingresos_33:registro_ingresos:ValidateLovFieldClientes` (no la versión de `Lov:Lov:Lov`), que devuelve además `banco_id`, `sat_cta_dest`, `sat_banco_dest`, `sat_banco_dest_descr`.
+
+Cuando `metodoPago === "PUE"` y la acción es `Add`, el `buildPayload()` incluye el bloque `generar_ingreso[...]` con los datos bancarios y el importe de pago. Ver spec `docs/spec/10-pago-integrado-pue.md` para el contrato completo.
+
+**PPD** → panel de pago oculto. El pago va por REP en Ingresos.
 
 ### Complementos opcionales (Fase 4: vacíos)
 
@@ -179,7 +198,7 @@ En la sección Totales se muestra **un renglón por cada combinación única de 
 
 | Estatus | Descripción | Acciones |
 |---|---|---|
-| `P` Prefactura | Sin timbrar, `uuid: null` | Editar · Timbrar · Eliminar |
+| `P` Prefactura | Sin timbrar, `uuid: null` | Editar · Timbrar ⚠️ (Eliminar pendiente implementar) |
 | `R` Registrada/Timbrada | Timbrada en SAT, tiene `uuid` | Ver PDF · Enviar correo · Cancelar |
 | `R` + `cancelacion_estatus: "En proceso"` | Cancelación solicitada al SAT, pendiente confirmación | Re-intentar cancelación |
 | `C` Cancelada | Cancelada en SAT | Ver PDF · Ver acuse (solo lectura) |

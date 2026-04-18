@@ -16,6 +16,16 @@ PWA React de facturación para **Sisnet V3 / PLANATOR ERP**. Reemplaza pantallas
 - Los listados se mantienen en Context durante la sesión (no re-fetch al volver de un detalle).
 - `modules/ventas/facturas_venta_33/app_api.php` — implementación anterior fallida, **ignorar**.
 
+## 1.1 Features implementadas fuera del scope inicial
+
+Las siguientes funcionalidades se implementaron durante el desarrollo y no estaban en el scope original del spec:
+
+- **Autenticación biométrica (WebAuthn):** login sin contraseña en revisitas usando el autenticador de plataforma del dispositivo. Ver `docs/spec/11-biometric-auth.md` para el diseño completo. Archivos: `src/lib/biometric.ts`, `src/lib/biometricStorage.ts`, `src/components/BiometricBanner.tsx`.
+- **Auto-refresh de JWT:** renovación proactiva del token al 80% del lifetime. No requiere cambios en el backend.
+- **Snackbar/toast global:** `SnackbarContext` con `showError`/`showSuccess` para notificaciones de operación. Reemplaza el patrón de `<Alert>` inline para errores de API.
+
+---
+
 ## 2. Stack Tecnológico
 
 | Categoría | Tecnología | Versión |

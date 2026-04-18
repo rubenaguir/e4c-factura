@@ -1,4 +1,4 @@
-# Autenticación biométrica (huella / Face ID)
+# §11 Autenticación biométrica (huella / Face ID) ✅ Implementada
 
 ## Resumen
 
@@ -144,21 +144,21 @@ Confirmar (Alert Dialog)
 ```
 src/
 ├── lib/
-│   ├── biometric.ts          ← WebAuthn wrapper (nuevo)
-│   └── biometricStorage.ts   ← Cifrado + localStorage (nuevo)
+│   ├── biometric.ts          ← WebAuthn wrapper
+│   └── biometricStorage.ts   ← Cifrado + localStorage
 ├── context/
-│   └── AuthContext.tsx       ← Agregar métodos biométricos (modificar)
+│   └── AuthContext.tsx       ← Métodos biométricos integrados
 ├── pages/
-│   └── LoginPage.tsx         ← Botón de huella en paso 1 (modificar)
+│   └── LoginPage.tsx         ← Botón de huella en paso 1
 └── components/
-    └── BiometricBanner.tsx   ← Banner de activación post-login (nuevo)
+    └── BiometricBanner.tsx   ← Banner de activación post-login
 ```
 
 ---
 
-## Plan de implementación
+## Implementación
 
-### Paso 1 — `src/lib/biometric.ts`
+### `src/lib/biometric.ts`
 
 Wrapper de la WebAuthn API. Sin dependencias externas.
 
@@ -175,7 +175,7 @@ verify(credentialId: string): Promise<boolean>
 - `userVerification: "required"` — fuerza verificación biométrica (no solo presencia)
 - Los challenges se generan con `crypto.getRandomValues` (no se validan en servidor, solo prueban presencia del autenticador local)
 
-### Paso 2 — `src/lib/biometricStorage.ts`
+### `src/lib/biometricStorage.ts`
 
 Cifrado y almacenamiento de credenciales.
 
@@ -207,9 +207,9 @@ clear(): void
 3. `ciphertext` = `AES-GCM.encrypt(JSON.stringify(session), derivedKey, iv)`
 4. Guardar `{ credentialId, iv, ciphertext }` en `localStorage["e4c_biometric"]`
 
-### Paso 3 — `src/context/AuthContext.tsx`
+### `src/context/AuthContext.tsx`
 
-Extender `AuthContextValue`:
+`AuthContextValue` expone:
 
 ```typescript
 // Estado
@@ -237,9 +237,7 @@ disableBiometric(): void
   // biometricStorage.clear()
 ```
 
-**Nota:** `enableBiometric` debe llamarse mientras `pendingData` aún tiene las credenciales (inmediatamente después del login exitoso) O guardar las credenciales en `state` para uso posterior.
-
-### Paso 4 — `src/pages/LoginPage.tsx`
+### `src/pages/LoginPage.tsx`
 
 En el Paso 1 del formulario, debajo del botón "Continuar":
 
@@ -267,7 +265,7 @@ En el Paso 1 del formulario, debajo del botón "Continuar":
 
 `handleBiometricLogin` llama `loginWithBiometric()`, captura errores con `showError`, y en caso de credenciales expiradas muestra mensaje orientativo.
 
-### Paso 5 — `src/components/BiometricBanner.tsx`
+### `src/components/BiometricBanner.tsx`
 
 Banner que aparece una vez después del primer login manual si la huella no está activada:
 
@@ -301,8 +299,6 @@ UI: banner pegado al fondo del AppShell (sobre el BottomNav en mobile), con boto
 
 El login biométrico siempre re-autentica contra la misma empresa, sucursal e instancia de la última sesión. Si el usuario necesita cambiar de sucursal, debe usar el flujo manual (usuario + contraseña), que muestra el selector de sucursal normalmente. Al completar ese login, puede reactivar la huella para la nueva sucursal seleccionada.
 
-El sistema legacy ya tiene una funcionalidad de cambio de sucursal en caliente — cuando se implemente en esta PWA, se integrará como un paso adicional posterior.
-
 ---
 
 ## Mejora futura: extensión `prf`
@@ -321,17 +317,3 @@ const prfOutput = assertion.getClientExtensionResults().prf?.results?.first;
 ```
 
 Esto elimina la necesidad de almacenar cualquier material de clave localmente. La migración es backward-compatible: detectar soporte en runtime y usar `prf` cuando esté disponible.
-
----
-
-## Estimación de esfuerzo
-
-| Paso | Archivo | Horas |
-|---|---|---|
-| 1 | `src/lib/biometric.ts` | 2h |
-| 2 | `src/lib/biometricStorage.ts` | 1h |
-| 3 | `src/context/AuthContext.tsx` | 1.5h |
-| 4 | `src/pages/LoginPage.tsx` | 1h |
-| 5 | `src/components/BiometricBanner.tsx` | 1h |
-| QA (Android + iOS) | — | 1.5h |
-| **Total** | | **~8h** |

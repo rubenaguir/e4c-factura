@@ -2,32 +2,41 @@
 
 ```
 src/
-├── main.tsx                     ← entrada, registra SW, providers
+├── main.tsx                     ← entrada, registra SW, providers (incluye SnackbarProvider)
 ├── App.tsx                      ← router root (HashRouter)
 │
 ├── api/
-│   ├── client.ts                ← fetch base, errores, token, forceLogout
+│   ├── client.ts                ← fetch base, flattenParams, errores, forceLogout
 │   └── endpoints/
 │       ├── auth.ts
 │       ├── facturas.ts
 │       ├── ingresos.ts
 │       ├── clientes.ts
 │       ├── productos.ts
-│       └── catalogos.ts         ← LOVs SAT
+│       └── lovs.ts              ← LOVs SAT (nombre real; no catalogos.ts)
 │
 ├── context/
-│   ├── AuthContext.tsx
+│   ├── AuthContext.tsx          ← incluye biometría y auto-refresh de JWT
 │   ├── FacturasContext.tsx
 │   ├── IngresosContext.tsx
 │   ├── ClientesContext.tsx
 │   ├── ProductosContext.tsx
-│   └── CatalogosContext.tsx
+│   ├── CatalogosContext.tsx
+│   ├── SnackbarContext.tsx      ← toast global (showError / showSuccess)
+│   ├── snackbar-context-def.ts  ← definición de tipos del contexto
+│   └── useSnackbar.ts           ← hook de acceso al snackbar
 │
 ├── hooks/
 │   ├── useAuth.ts
-│   ├── useApi.ts                ← wrapper fetch con loading/error
-│   ├── useDebounce.ts           ← búsquedas incrementales (300ms)
+│   ├── useIngresoForm.ts        ← estado y lógica completa de IngresoDetail
+│   ├── useLov.ts                ← helper para cargar LOVs lazy
 │   └── usePwaInstall.ts
+│
+├── lib/
+│   ├── biometric.ts             ← WebAuthn wrapper (checkSupport, register, verify)
+│   ├── biometricStorage.ts      ← cifrado AES-GCM de credenciales en localStorage
+│   ├── pdf.ts                   ← helpers para manejar Blob de PDF
+│   └── utils.ts                 ← utilidades generales (cn, etc.)
 │
 ├── components/
 │   ├── layout/
@@ -35,15 +44,10 @@ src/
 │   │   ├── Sidebar.tsx
 │   │   ├── TopBar.tsx
 │   │   ├── BottomNav.tsx
-│   │   └── PageHeader.tsx
-│   ├── pickers/
-│   │   ├── ClientePicker.tsx    ← combo con alta inline
-│   │   ├── ProductoPicker.tsx   ← combo con alta inline + virtualizado
-│   │   ├── MonedaPicker.tsx
-│   │   ├── UsoCfdiPicker.tsx
-│   │   ├── FormaPagoPicker.tsx
-│   │   ├── MetodoPagoPicker.tsx
-│   │   └── RegimenFiscalPicker.tsx
+│   │   ├── MobileDrawer.tsx     ← drawer de navegación mobile
+│   │   └── navItems.ts          ← definición de ítems de navegación
+│   ├── BiometricBanner.tsx      ← banner de activación biométrica post-login
+│   ├── PwaUpdateBanner.tsx      ← banner de actualización del SW
 │   └── ui/                      ← shadcn/ui generados aquí
 │
 ├── modules/
@@ -51,8 +55,10 @@ src/
 │       ├── types.ts             ← DraftImpuesto, DraftConcepto, FacturaDraft, Totales
 │       ├── facturaUtils.ts      ← newKey, helpers fecha/formato, calcBase/calcTotales
 │       ├── facturaMappers.ts    ← newDraft, draftFromFactura, buildPayload, conceptoFrom*
+│       ├── pdfSheetState.ts     ← estado del visor de PDF
 │       ├── useIsDesktop.ts      ← hook breakpoint md (768px)
 │       ├── InlineModal.tsx      ← Sheet (mobile) / Dialog (desktop)
+│       ├── PdfSheet.tsx         ← visor de PDF incrustado (Sheet/modal)
 │       ├── ClientePickerInline.tsx  ← búsqueda + alta inline de cliente
 │       ├── ProductoPickerInline.tsx ← búsqueda + alta inline de producto/SKU
 │       ├── ConceptoSheet.tsx    ← editor de concepto con impuestos
@@ -62,8 +68,9 @@ src/
 └── pages/
     ├── LoginPage.tsx
     ├── FacturasPage.tsx
-    ├── FacturaDetail.tsx        ← orquestación + estado (≈ 380 líneas)
+    ├── FacturaDetail.tsx        ← orquestación + estado
     ├── IngresosPage.tsx
+    ├── IngresoDetail.tsx        ← delega estado a useIngresoForm
     ├── ClientesPage.tsx
     ├── ClienteDetail.tsx
     ├── ProductosPage.tsx
@@ -78,11 +85,30 @@ src/
 | Context | `PascalCase` + `Context` | `FacturasContext.tsx` |
 | Hook | `camelCase` con `use` | `useAuth.ts` |
 | Endpoint file | `camelCase` | `facturas.ts` |
-| Componente reutilizable | `PascalCase` | `ClientePicker.tsx` |
+| Componente reutilizable | `PascalCase` | `BiometricBanner.tsx` |
 | Tipos de módulo | `camelCase` + `types` | `types.ts` |
 | Utils puros de módulo | `camelCase` + `Utils` | `facturaUtils.ts` |
 | Mappers de módulo | `camelCase` + `Mappers` | `facturaMappers.ts` |
 | Picker inline (módulo) | `PascalCase` + `Inline` | `ClientePickerInline.tsx` |
+
+## Rutas del router
+
+```
+/login                   → LoginPage
+/                        → AppShell (guard: !isAuthenticated → /login)
+  /facturas              → FacturasPage
+  /facturas/nuevo        → FacturaDetail (nueva)
+  /facturas/:serie/:folio → FacturaDetail (existente)
+  /ingresos              → IngresosPage
+  /ingresos/nuevo        → IngresoDetail (nueva)
+  /ingresos/:serie/:folio → IngresoDetail (existente)
+  /clientes              → ClientesPage
+  /clientes/nuevo        → ClienteDetail (nuevo)
+  /clientes/:id          → ClienteDetail (existente)
+  /productos             → ProductosPage
+  /productos/nuevo       → ProductoDetail (nuevo)
+  /productos/:id         → ProductoDetail (existente) ← param es :id, no :sku
+```
 
 ---
 

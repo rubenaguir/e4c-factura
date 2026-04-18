@@ -6,6 +6,8 @@ Las facturas con `metodo_pago = "PUE"` (Pago en una sola exhibición) implican q
 
 Este documento describe el flujo "Flujo A": el frontend captura los datos de pago y los incluye en el `Add` de factura; el backend crea la factura y el ingreso en un solo paso.
 
+> **Estado:** implementado en `FacturaDetail.tsx`. Ver sección "Pendientes" al final.
+
 > **Restricciones confirmadas:**
 > - El pago integrado **solo aplica al endpoint `Add` (timbrado)**. Las prefacturas (`AddPrefactura`) **no registran ingreso**, independientemente del método de pago.
 > - El pago solo se procesa cuando `metodo_pago === "PUE"` en la factura timbrada.
@@ -97,19 +99,15 @@ Todos los campos son editables por el usuario. Los datos bancarios son opcionale
 
 ---
 
-## Cambios necesarios en el frontend
+## Implementación actual
 
-### 1. `FacturaDraft` (types.ts)
+### `FacturaDraft` (types.ts) ✅
 
-Agregar campos bancarios al tipo:
-
+Campos implementados:
 ```typescript
-// Campos actuales
 cuentaCobroId: string;
 referenciaPago: string;
-
-// Agregar
-importePago: string;       // precargado con draft.total; editable para pago parcial
+importePago: string;
 bancoId: string;
 bancoDescr: string;
 satCtaOri: string;
@@ -118,61 +116,36 @@ satBancoDest: string;
 satBancoDestDescr: string;
 ```
 
-### 2. `newDraft` / `draftFromFactura` (facturaMappers.ts)
+### `buildPayload` (facturaMappers.ts) ✅
 
-Inicializar los nuevos campos en vacío. En `draftFromFactura` mapear desde la respuesta si el backend los devuelve en `FacturaCompleta`.
+Bloque `generar_ingreso` incluido condicionalmente cuando `metodoPago === "PUE"` y acción es `"Add"`. Los campos bancarios van como `generar_ingreso[campo]=valor` usando `flattenParams`.
 
-### 3. `buildPayload` (facturaMappers.ts)
+### Datos bancarios del cliente en FacturaDetail ✅
 
-Extender el bloque condicional PUE, **solo cuando la acción es `"Add"` (no `"AddPrefactura"`)**:
+Al seleccionar cliente en `FacturaDetail`, se llama `validateLovFieldClientesIngresos` (`tesoreria:registro_ingresos_33:registro_ingresos:ValidateLovFieldClientes`) que devuelve `banco_id`, `sat_cta_dest`, `sat_banco_dest`, `sat_banco_dest_descr`. También se llama `SearchCuentasBancariasCliente` para precargar la cuenta origen del cliente.
 
-```typescript
-...(draft.metodoPago === "PUE" && action === "Add" ? {
-  "generar_ingreso[importe]": draft.importePago,   // precargado con total; editable
-  "generar_ingreso[referencia_pago]": draft.referenciaPago,
-  "generar_ingreso[banco_id]": draft.bancoId,
-  "generar_ingreso[banco_descr]": draft.bancoDescr,
-  "generar_ingreso[sat_cta_ori]": draft.satCtaOri,
-  "generar_ingreso[sat_cta_dest]": draft.satCtaDest,
-  "generar_ingreso[sat_banco_dest]": draft.satBancoDest,
-  "generar_ingreso[sat_banco_dest_descr]": draft.satBancoDestDescr,
-} : {}),
-// Si todos los campos bancarios están vacíos, el backend recibe el contenedor vacío
-// y no procesa el ingreso. No se requiere lógica adicional en el frontend.
-```
+### Sección PUE en `FacturaDetail.tsx` ✅
 
-### 4. `ClientePickerInline` → callback `onSelect`
-
-Cuando se selecciona cliente y `metodoPago === "PUE"`, hacer call paralelo a `SearchCuentasBancariasCliente` y precargar campos bancarios en el draft.
-
-Alternativa más simple: hacerlo directamente en el handler `handleClienteSelected` de FacturaDetail, que ya existe y recibe el `ClienteLov`.
-
-### 5. Sección PUE en `FacturaDetail.tsx`
-
-Reemplazar los dos inputs actuales por el formulario completo:
-
+Formulario implementado con 6 campos:
 ```
 ╔══ PAGO INTEGRADO (PUE) ════════════════╗
 ║ Importe:         [1,234.56    ]       ║  ← precargado con total; editable
-║ Banco receptor:  [002 BANAMEX ▼]      ║  ← LOV o texto libre
-║ Cta. origen:     [123456789   ]       ║  ← cuenta del cliente
-║ Cta. destino:    [343434343   ]       ║  ← cuenta de la empresa
 ║ Referencia:      [REF-001     ]       ║
+║ Banco origen:    [002] [BANAMEX]      ║  ← clave + nombre
+║ Cta. origen:     [Select / Input]     ║  ← historial o texto libre
+║ Banco destino:   [002] [BANAMEX]      ║  ← clave + nombre
+║ Cta. destino:    [343434343   ]       ║
 ╚════════════════════════════════════════╝
 ```
-
-La sección se muestra solo cuando `metodoPago === "PUE" && !isReadOnly`. El botón "Prefactura" **no aplica pago**; la sección PUE es irrelevante para ese flujo y el payload de `AddPrefactura` nunca incluye `generar_ingreso` ni los campos bancarios.
-
-En modo lectura (factura timbrada), si el backend devuelve los datos bancarios en `FacturaCompleta`, mostrarlos como texto.
 
 ---
 
 ## Pendientes de validación con backend
 
-1. **Confirmar que el backend interpreta correctamente `generar_ingreso[campo]=valor`** como contenedor de pago y que omitirlo (o enviarlo vacío) no genera ingreso.
-2. **¿Qué devuelve `FacturaCompleta`** para facturas PUE con pago registrado? ¿Incluye `serie_ingreso` / `folio_ingreso` para poder navegar al ingreso creado?
-3. **`cuenta_cobro_id`** — ¿es necesario en el payload? ¿Qué valor toma para una factura nueva?
-4. **`sat_cta_dest` y `sat_banco_dest`** — ¿provienen del JWT de empresa o deben enviarse explícitamente?
+1. **`generar_ingreso[campo]=valor` confirmado** — el backend lo procesa. Omitirlo no genera ingreso. ✅
+2. **`sat_cta_dest` y `sat_banco_dest`** provienen de `ValidateLovFieldClientes` (módulo ingresos), enviados explícitamente por el frontend. ✅
+3. ⚠️ **`FacturaCompleta` tras PUE** — ¿devuelve `serie_ingreso`/`folio_ingreso` del ingreso creado para navegar a él desde la factura? Pendiente confirmar con backend.
+4. ⚠️ **`cuenta_cobro_id`** — está en el draft y se envía condicionalmente si tiene valor. Pendiente confirmar si el backend lo requiere para facturas nuevas o solo para prefacturas convertidas.
 
 ---
 

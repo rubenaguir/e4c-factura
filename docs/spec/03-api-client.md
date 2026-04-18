@@ -15,13 +15,20 @@
 ```typescript
 export async function apiCall<T>(
   opReq: string,
-  params: Record<string, string | number | boolean> = {}
+  params: Record<string, unknown> = {}
 ): Promise<T>
+```
+
+El tipo de `params` es `Record<string, unknown>` para soportar objetos y arrays anidados. La función interna `flattenParams()` serializa la estructura en notación PHP bracket:
+```
+conceptos[0][sku]=xxx
+conceptos[0][impuestos_traslados][0][importe]=440
+precios[0][]=LISTA4
 ```
 
 Reglas internas:
 1. Leer JWT de `localStorage` key `sv3_session`.
-2. Body `URLSearchParams` con `opReq`, `session`, y `params`.
+2. Construir `URLSearchParams` con `opReq`, `session`, y todos los `params` serializados con `flattenParams`.
 3. Si `VITE_XDEBUG_ENABLED === "true"` → append `?XDEBUG_SESSION_START=XDEBUG_ECLIPSE`.
 4. `POST` → parsear JSON.
 5. Si `result.success === false && result.forceLogout === "S"` → logout global.
@@ -57,16 +64,30 @@ Mantener consistencia con el serializador ExtJS del backend PHP.
 ### Autenticación
 | opReq | Params |
 |---|---|
-| `seguri:acceso:acceso_jwt:Login` | `usuario`, `contrasena`, `workspace`, `empresa_id`, `sucursal_id` |
-| `seguri:acceso:acceso_jwt:GetWorkspaces` | — |
-| `seguri:acceso:acceso_jwt:SearchSucursalesUsuario` | `usuario`, `contrasena` |
+| `seguri:acceso:acceso_jwt:Login` | `usuario`, `contrasena`, `workspace`, `empresa_id`, `sucursal` (valor compuesto `empresa_id\|sucursal_id\|instancia_id`) |
+| `seguri:acceso:acceso_jwt:SearchSucursalesUsuario` | `usuario_id` (usuario), `contrasena` — **Paso 1 del login**: devuelve `SucursalOption[]` |
+| `seguri:acceso:acceso_jwt:ValidateSession` | — (no params adicionales, usa el JWT del body) — refresca el token; llamado automáticamente al 80% del lifetime |
+
+> `GetWorkspaces` estaba en el spec original pero no se usa en la implementación actual. `SearchSucursalesUsuario` cumple ese rol.
+
+**`SucursalOption`:**
+```typescript
+interface SucursalOption {
+  empresa_id: string;
+  empresa_nombre: string;
+  sucursal_id: string;
+  sucursal_nombre: string;
+  empresa_sucursal_id: string;  // valor compuesto "empresa_id|sucursal_id|instancia_id"
+  workspace: string;
+}
+```
 
 ### Facturas (`ventas:facturas_venta_33:facturas_venta:*`)
 
 | Acción | Params clave |
 |---|---|
 | `Search` | `fecha_inicial`, `fecha_final`, `rfc`, `nombre`, `serie`, `folio`, `pedido_serie`, `pedido_folio`, `estatus`, `disable_sucursal_filter` |
-| `Load` | `empresa_id`, `serie`, `folio` |
+| `Load` | `serie`, `folio` — `empresa_id` **no se envía**, el backend lo toma del JWT |
 | `LoadPresetClientData` | `cliente_id` → devuelve `FacturaCompleta` de la última factura del cliente |
 | `Add` | payload completo (ver `docs/spec/05-screens.md` §payload) — crea y timbra en un paso |
 | `AddPrefactura` | mismo payload que `Add` — crea prefactura sin timbrar |
@@ -252,6 +273,8 @@ Params: `serie`, `folio`
 
 **Llamar de forma asíncrona** al mostrar el detalle de una factura timbrada — consulta al SAT y puede tardar varios segundos.
 
+> ⚠️ **Pendiente:** La función `loadEstatusSAT()` está definida en `facturas.ts` pero no se llama desde ninguna pantalla. Implementar la llamada async en `FacturaDetail` al cargar una factura con `estatus="R"`.
+
 Devuelve `FacturaCompleta` más el campo adicional:
 
 ```typescript
@@ -286,7 +309,7 @@ GET {VITE_API_BASE_URL}?opReq=ventas:facturas_venta_33:facturas_venta:PrintPdf
   &printMetodoPago=<valor>
 ```
 
-Respuesta: string `data:application/pdf;base64,...` — abrir en nueva pestaña del navegador.
+Respuesta: **`Blob` binario** (PDF directo) — se muestra en el componente `PdfSheet` (Sheet/modal interna), no se abre en nueva pestaña. `empresa_id` es el único campo fuera del JWT que se envía explícitamente en este endpoint.
 
 ---
 
@@ -668,22 +691,28 @@ Params: `sku`, `lista_precios_id`
 
 Respuesta: mismo shape que un registro de `LoadLovFieldSku` más `estatus`, `impuestos_retenciones: []`.
 
-### LOVs SAT y Clientes (`Lov:Lov:Lov:*`)
+### LOVs SAT y Clientes
 
-| LOV | Acción |
+Los nombres reales de opReq difieren de los nombres semánticos. Referencia completa:
+
+| LOV | opReq real |
 |---|---|
-| Clientes (lista) | `LoadLovFieldClientes` — params: `pageSize` |
-| Cliente (validar) | `ValidateLovFieldClientes` — params: `cliente_id` |
-| Uso CFDI | `LoadLovFieldUsoCfdi` |
-| Forma de pago | `LoadLovFieldFormaPago` |
-| Método de pago | `LoadLovFieldMetodoPago` |
-| Régimen fiscal | `LoadLovFieldRegimenFiscal` |
-| Moneda | `LoadLovFieldMoneda` |
-| Unidad de medida | `LoadLovFieldUnidades` |
-| Clave SAT prod/serv | `LoadLovFieldClaveProdServ` |
-| Objeto impuesto | `LoadLovFieldObjetoImpuesto` |
-| Tipo de cambio | `LoadLovFieldTipoCambio` |
+| Clientes (lista) — en facturación | `Lov:Lov:Lov:LoadLovFieldClientes` — params: `pageSize` |
+| Cliente (validar) — en facturación | `Lov:Lov:Lov:ValidateLovFieldClientes` — params: `cliente_id` |
+| Clientes (lista) — en ingresos | `tesoreria:registro_ingresos_33:registro_ingresos:LoadLovFieldClientes` |
+| Cliente (validar) — en ingresos | `tesoreria:registro_ingresos_33:registro_ingresos:ValidateLovFieldClientes` — devuelve también datos bancarios (`banco_id`, `sat_cta_dest`, etc.) |
+| Uso CFDI | `Lov:Lov:Lov:LoadLovFieldUsosComprobantesSat` |
+| Forma de pago | `Lov:Lov:Lov:LoadLovFieldFormasPagoSat33` |
+| Método de pago | `Lov:Lov:Lov:LoadLovFieldMetodosPagoSat33` |
+| Régimen fiscal | `sistema:empresas:empresas:SearchRegimenesSAT` |
+| Moneda | `Lov:Lov:Lov:LoadLovFieldMonedasEmpresa` — incluye `tipo_cambio` y `decimales_sat` |
+| Unidad de medida | `Lov:Lov:Lov:LoadLovFieldUnidades` |
+| Clave SAT prod/serv | `Lov:Lov:Lov:LoadLovFieldClaveProdServ` |
+| Objeto impuesto | **Datos estáticos en frontend** — no se fetcha del backend (ver `OBJETO_IMPUESTO_RECORDS` en `src/api/endpoints/lovs.ts`) |
+| Tipo de cambio | `LoadLovFieldTipoCambio` — ⚠️ **pendiente implementar** (el TC actual se lee del campo `tipo_cambio` de la moneda en `loadMoneda`) |
 | Datos preset cliente | `ventas:facturas_venta_33:facturas_venta:LoadPresetClientData` — params: `cliente_id` → `FacturaCompleta` |
+
+> El archivo de LOVs es `src/api/endpoints/lovs.ts` (no `catalogos.ts` como indicaba el spec original).
 
 `LoadLovFieldClientes` y `ValidateLovFieldClientes` devuelven `ClienteLov`:
 
