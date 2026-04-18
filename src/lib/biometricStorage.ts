@@ -14,6 +14,8 @@ export interface RawSession {
   workspace: string;
   empresa_id: string;
   sucursal: string;
+  empresa_nombre?: string;
+  sucursal_nombre?: string;
 }
 
 function bufferToBase64(buffer: ArrayBuffer): string {

@@ -15,6 +15,8 @@ export interface AuthState {
   workspace: string | null;
   empresaId: string | null;
   sucursalId: string | null;
+  empresaNombre: string | null;
+  sucursalNombre: string | null;
   usuario: string | null;
   isAuthenticated: boolean;
 }
@@ -47,6 +49,22 @@ function parseTokenPayload(token: string): Record<string, unknown> {
   return JSON.parse(atob(b64));
 }
 
+const SESSION_NAMES_KEY = "sv3_session_names";
+
+function readSessionNames(): { empresaNombre: string | null; sucursalNombre: string | null } {
+  try {
+    const raw = localStorage.getItem(SESSION_NAMES_KEY);
+    if (!raw) return { empresaNombre: null, sucursalNombre: null };
+    return JSON.parse(raw);
+  } catch {
+    return { empresaNombre: null, sucursalNombre: null };
+  }
+}
+
+function saveSessionNames(empresaNombre: string, sucursalNombre: string) {
+  localStorage.setItem(SESSION_NAMES_KEY, JSON.stringify({ empresaNombre, sucursalNombre }));
+}
+
 function readSession(): AuthState {
   try {
     const raw = localStorage.getItem("sv3_session");
@@ -55,13 +73,17 @@ function readSession(): AuthState {
     // Descartar token ya expirado al arrancar
     if (typeof payload.exp === "number" && payload.exp * 1000 < Date.now()) {
       localStorage.removeItem("sv3_session");
+      localStorage.removeItem(SESSION_NAMES_KEY);
       return emptyState();
     }
+    const names = readSessionNames();
     return {
       token: raw,
       workspace: payload.workspace as string ?? null,
       empresaId: payload.empresa_id as string ?? null,
       sucursalId: payload.sucursal_id as string ?? null,
+      empresaNombre: names.empresaNombre,
+      sucursalNombre: names.sucursalNombre,
       usuario: payload.usuario as string ?? null,
       isAuthenticated: true,
     };
@@ -71,7 +93,7 @@ function readSession(): AuthState {
 }
 
 function emptyState(): AuthState {
-  return { token: null, workspace: null, empresaId: null, sucursalId: null, usuario: null, isAuthenticated: false };
+  return { token: null, workspace: null, empresaId: null, sucursalId: null, empresaNombre: null, sucursalNombre: null, usuario: null, isAuthenticated: false };
 }
 
 /** Devuelve ms hasta el 80% del tiempo restante del token (mínimo 0). */
@@ -116,6 +138,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     contrasena: string;
     workspace: string;
     empresa_id: string;
+    empresa_nombre?: string;
+    sucursal_nombre?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -124,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem("sv3_session");
+    localStorage.removeItem(SESSION_NAMES_KEY);
     pendingData.current = null;
     postLoginCredsRef.current = null;
     if (refreshTimerRef.current !== null) {
@@ -204,12 +229,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const workspace = 'default';
       const loginRes = await apiLogin(usuario, contrasena, workspace, empresaId, sucursalId);
 
+      const sucursalMatch = pendingData.current!.sucursales.find(
+        (s) => s.empresa_id === (loginRes.empresa_id ?? empresaId) && s.sucursal_id === (loginRes.sucursal_id ?? sucursalId)
+      );
+      const empresaNombre = sucursalMatch?.empresa_nombre ?? null;
+      const sucursalNombre = sucursalMatch?.sucursal_nombre ?? null;
+      if (empresaNombre && sucursalNombre) saveSessionNames(empresaNombre, sucursalNombre);
+
       // Guardar para enableBiometric antes de limpiar pendingData
       postLoginCredsRef.current = {
         usuario,
         contrasena,
         workspace: loginRes.workspace ?? workspace,
         empresa_id: loginRes.empresa_id ?? empresaId,
+        empresa_nombre: empresaNombre ?? undefined,
+        sucursal_nombre: sucursalNombre ?? undefined,
       };
 
       pendingData.current = null;
@@ -220,6 +254,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         workspace: loginRes.workspace ?? workspace,
         empresaId: loginRes.empresa_id ?? empresaId,
         sucursalId: loginRes.sucursal_id ?? sucursalId,
+        empresaNombre,
+        sucursalNombre,
         usuario: loginRes.usuario ?? usuario,
         isAuthenticated: true,
       }));
@@ -244,6 +280,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       workspace: creds.workspace,
       empresa_id: creds.empresa_id,
       sucursal,
+      empresa_nombre: creds.empresa_nombre,
+      sucursal_nombre: creds.sucursal_nombre,
     });
 
     postLoginCredsRef.current = null;
@@ -265,12 +303,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         stored.session.empresa_id,
         stored.session.sucursal
       );
+      const empresaNombre = stored.session.empresa_nombre ?? null;
+      const sucursalNombre = stored.session.sucursal_nombre ?? null;
+      if (empresaNombre && sucursalNombre) saveSessionNames(empresaNombre, sucursalNombre);
+
       applyToken(loginRes.session);
       setState((prev) => ({
         ...prev,
         workspace: loginRes.workspace ?? stored.session.workspace,
         empresaId: loginRes.empresa_id ?? stored.session.empresa_id,
         sucursalId: loginRes.sucursal_id ?? stored.session.sucursal,
+        empresaNombre,
+        sucursalNombre,
         usuario: loginRes.usuario ?? stored.session.usuario,
         isAuthenticated: true,
       }));
