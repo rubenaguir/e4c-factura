@@ -4,10 +4,13 @@ import {
   getMontoFacturado,
   getPorCobrar,
   getIngresos,
+  getAntiguedadSaldos,
   getCancelacionesPendientes,
 } from "@/api/endpoints/dashboard";
-import { readCache, writeCache, isCacheStale } from "@/lib/dashboardCache";
+import { readCache, writeCache } from "@/lib/dashboardCache";
+import type { AntiguedadSaldosData } from "@/lib/dashboardCache";
 import MetricCard from "@/components/dashboard/MetricCard";
+import AntiguedadSaldosCard from "@/components/dashboard/AntiguedadSaldosCard";
 import CancelacionesList from "@/components/dashboard/CancelacionesList";
 
 type Status = "idle" | "loading" | "success" | "error";
@@ -19,7 +22,7 @@ interface CardState<T> {
 }
 
 type FacturadoData = { mes_actual: string; mes_anterior: string };
-type PorCobrarData = { total: string };
+type PorCobrarData = { mes_actual: string; mes_anterior: string };
 type IngresosData = { mes_actual: string; mes_anterior: string };
 type CancelacionesData = CancelacionPendiente[];
 
@@ -27,6 +30,7 @@ interface DashboardState {
   facturado: CardState<FacturadoData>;
   porCobrar: CardState<PorCobrarData>;
   ingresos: CardState<IngresosData>;
+  antiguedadSaldos: CardState<AntiguedadSaldosData>;
   cancelaciones: CardState<CancelacionesData>;
 }
 
@@ -41,6 +45,7 @@ function stateFromCache(cache: NonNullable<ReturnType<typeof readCache>>): Dashb
     facturado: cardFromCache(cache.facturado),
     porCobrar: cardFromCache(cache.porCobrar),
     ingresos: cardFromCache(cache.ingresos),
+    antiguedadSaldos: cardFromCache(cache.antiguedadSaldos),
     cancelaciones: cardFromCache(cache.cancelaciones),
   };
 }
@@ -49,6 +54,7 @@ const INITIAL_STATE: DashboardState = {
   facturado: LOADING,
   porCobrar: LOADING,
   ingresos: LOADING,
+  antiguedadSaldos: LOADING,
   cancelaciones: LOADING,
 };
 
@@ -83,13 +89,15 @@ export default function DashboardPage() {
       facturado: prev.facturado.status === "success" ? prev.facturado : LOADING,
       porCobrar: prev.porCobrar.status === "success" ? prev.porCobrar : LOADING,
       ingresos: prev.ingresos.status === "success" ? prev.ingresos : LOADING,
+      antiguedadSaldos: prev.antiguedadSaldos.status === "success" ? prev.antiguedadSaldos : LOADING,
       cancelaciones: prev.cancelaciones.status === "success" ? prev.cancelaciones : LOADING,
     }));
 
-    const [r1, r2, r3, r4] = await Promise.allSettled([
+    const [r1, r2, r3, r4, r5] = await Promise.allSettled([
       getMontoFacturado(),
       getPorCobrar(),
       getIngresos(),
+      getAntiguedadSaldos(),
       getCancelacionesPendientes(),
     ]);
 
@@ -102,7 +110,7 @@ export default function DashboardPage() {
     }
 
     if (r2.status === "fulfilled") {
-      next.porCobrar = { status: "success", data: { total: r2.value.total }, error: null };
+      next.porCobrar = { status: "success", data: { mes_actual: r2.value.mes_actual, mes_anterior: r2.value.mes_anterior }, error: null };
     } else {
       next.porCobrar = { status: "error", data: null, error: String(r2.reason?.message ?? "Error desconocido") };
     }
@@ -114,9 +122,16 @@ export default function DashboardPage() {
     }
 
     if (r4.status === "fulfilled") {
-      next.cancelaciones = { status: "success", data: r4.value.records, error: null };
+      const { success: _, ...antiguedadData } = r4.value;
+      next.antiguedadSaldos = { status: "success", data: antiguedadData, error: null };
     } else {
-      next.cancelaciones = { status: "error", data: null, error: String(r4.reason?.message ?? "Error desconocido") };
+      next.antiguedadSaldos = { status: "error", data: null, error: String(r4.reason?.message ?? "Error desconocido") };
+    }
+
+    if (r5.status === "fulfilled") {
+      next.cancelaciones = { status: "success", data: r5.value.records, error: null };
+    } else {
+      next.cancelaciones = { status: "error", data: null, error: String(r5.reason?.message ?? "Error desconocido") };
     }
 
     setState(next);
@@ -125,12 +140,14 @@ export default function DashboardPage() {
       next.facturado.status === "success" &&
       next.porCobrar.status === "success" &&
       next.ingresos.status === "success" &&
+      next.antiguedadSaldos.status === "success" &&
       next.cancelaciones.status === "success"
     ) {
       writeCache({
         facturado: next.facturado.data!,
         porCobrar: next.porCobrar.data!,
         ingresos: next.ingresos.data!,
+        antiguedadSaldos: next.antiguedadSaldos.data!,
         cancelaciones: next.cancelaciones.data!,
       });
     }
@@ -138,10 +155,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const cache = readCache();
-    if (cache && !isCacheStale(cache)) return;
+    if (!cache) {
+      void fetchAll();
+      return;
+    }
     const id = setTimeout(() => { void fetchAll(); }, 1500);
     return () => clearTimeout(id);
-     
   }, []);
 
   async function retryFacturado() {
@@ -158,7 +177,7 @@ export default function DashboardPage() {
     setState((p) => ({ ...p, porCobrar: LOADING }));
     try {
       const r = await getPorCobrar();
-      setState((p) => ({ ...p, porCobrar: { status: "success", data: { total: r.total }, error: null } }));
+      setState((p) => ({ ...p, porCobrar: { status: "success", data: { mes_actual: r.mes_actual, mes_anterior: r.mes_anterior }, error: null } }));
     } catch (e) {
       setState((p) => ({ ...p, porCobrar: { status: "error", data: null, error: String((e as Error).message) } }));
     }
@@ -171,6 +190,17 @@ export default function DashboardPage() {
       setState((p) => ({ ...p, ingresos: { status: "success", data: { mes_actual: r.mes_actual, mes_anterior: r.mes_anterior }, error: null } }));
     } catch (e) {
       setState((p) => ({ ...p, ingresos: { status: "error", data: null, error: String((e as Error).message) } }));
+    }
+  }
+
+  async function retryAntiguedadSaldos() {
+    setState((p) => ({ ...p, antiguedadSaldos: LOADING }));
+    try {
+      const r = await getAntiguedadSaldos();
+      const { success: _, ...antiguedadData } = r;
+      setState((p) => ({ ...p, antiguedadSaldos: { status: "success", data: antiguedadData, error: null } }));
+    } catch (e) {
+      setState((p) => ({ ...p, antiguedadSaldos: { status: "error", data: null, error: String((e as Error).message) } }));
     }
   }
 
@@ -200,8 +230,9 @@ export default function DashboardPage() {
       />
       <MetricCard
         label="Por cobrar"
-        mesActual={state.porCobrar.data?.total ?? null}
-        mesAnterior={null}
+        mesActual={state.porCobrar.data?.mes_actual ?? null}
+        mesAnterior={state.porCobrar.data?.mes_anterior ?? null}
+        mesAnteriorLabel={mesAnteriorLabel}
         status={state.porCobrar.status}
         error={state.porCobrar.error ?? undefined}
         onRetry={retryPorCobrar}
@@ -214,6 +245,12 @@ export default function DashboardPage() {
         status={state.ingresos.status}
         error={state.ingresos.error ?? undefined}
         onRetry={retryIngresos}
+      />
+      <AntiguedadSaldosCard
+        data={state.antiguedadSaldos.data}
+        status={state.antiguedadSaldos.status}
+        error={state.antiguedadSaldos.error ?? undefined}
+        onRetry={retryAntiguedadSaldos}
       />
       <CancelacionesList
         items={state.cancelaciones.data}

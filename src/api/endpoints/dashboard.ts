@@ -10,7 +10,18 @@ export interface MontoFacturadoResponse {
 
 export interface PorCobrarResponse {
   success: boolean;
-  total: string;
+  mes_actual: string;
+  mes_anterior: string;
+}
+
+export interface AntiguedadSaldosResponse {
+  success: boolean;
+  saldo_0: string;
+  saldo_1_30: string;
+  saldo_31_60: string;
+  saldo_61_90: string;
+  saldo_91: string;
+  saldo_total: string;
 }
 
 export interface IngresosResponse {
@@ -42,6 +53,9 @@ export const getPorCobrar = () =>
 
 export const getIngresos = () =>
   apiCall<IngresosResponse>(`${MODULE}:GetIngresos`);
+
+export const getAntiguedadSaldos = () =>
+  apiCall<AntiguedadSaldosResponse>(`${MODULE}:GetAntiguedadSaldos`);
 
 export const getCancelacionesPendientes = () =>
   apiCall<CancelacionesPendientesResponse>(`${MODULE}:GetCancelacionesPendientes`);

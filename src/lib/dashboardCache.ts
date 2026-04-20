@@ -1,12 +1,15 @@
-import type { CancelacionPendiente } from "@/api/endpoints/dashboard";
+import type { AntiguedadSaldosResponse, CancelacionPendiente } from "@/api/endpoints/dashboard";
 
 const CACHE_KEY = "e4c_dashboard";
 const TTL_MS = 10 * 60 * 1000;
 
+export type AntiguedadSaldosData = Omit<AntiguedadSaldosResponse, "success">;
+
 export interface DashboardCache {
   facturado: { mes_actual: string; mes_anterior: string };
-  porCobrar: { total: string };
+  porCobrar: { mes_actual: string; mes_anterior: string };
   ingresos: { mes_actual: string; mes_anterior: string };
+  antiguedadSaldos: AntiguedadSaldosData;
   cancelaciones: CancelacionPendiente[];
   fetchedAt: string;
 }

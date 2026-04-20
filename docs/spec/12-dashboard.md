@@ -24,11 +24,14 @@ El `AppShell` redirecciona `/` → `/dashboard`. Las rutas existentes no cambian
 | # | Tarjeta | Datos | Tipo |
 |---|---|---|---|
 | 1 | Monto facturado | Total mes actual (MXN) + Δ% vs mes anterior | Métrica |
-| 2 | Por cobrar | Saldo pendiente de facturas PPD sin complemento | Métrica |
+| 2 | Por cobrar | Saldo PPD sin complemento **del mes actual** + Δ% vs mes anterior | Métrica |
 | 3 | Ingresos registrados | Total REP del mes actual + Δ% vs mes anterior | Métrica |
-| 4 | Cancelaciones pendientes | Lista de folios con solicitud enviada al SAT sin respuesta | Lista |
+| 4 | Antigüedad de saldos | Gráfica de barras por rango de días + saldo total acumulado histórico | Gráfica |
+| 5 | Cancelaciones pendientes | Lista de folios con solicitud enviada al SAT sin respuesta | Lista |
 
 > Todos los valores vienen pre-procesados del backend. El frontend no aplica ningún cálculo ni lógica de filtrado.
+
+> **Separación de alcances:** Las tarjetas 1–3 corresponden al mes en curso (período del header). La tarjeta 4 muestra la cartera acumulada histórica; su total es el único lugar donde aparece el saldo global pendiente.
 
 ---
 
@@ -51,11 +54,14 @@ Prefijo común: `ventas:facturas_venta_33:dashboard_pwa`
 
 ### `GetPorCobrar`
 
+Devuelve el saldo PPD sin complemento **del mes en curso** + comparativa vs. mes anterior (misma semántica que `GetMontoFacturado`).
+
 **Response esperado:**
 ```json
 {
   "success": true,
-  "total": "340000.00"
+  "mes_actual": "340000.00",
+  "mes_anterior": "410000.00"
 }
 ```
 
@@ -99,6 +105,42 @@ Prefijo común: `ventas:facturas_venta_33:dashboard_pwa`
 >
 > El frontend muestra ambos estados en la misma lista, diferenciando visualmente `Plazo vencido` como más urgente (ej. badge rojo vs. amarillo). No aplica ninguna lógica adicional — los valores vienen del backend tal cual.
 
+### `GetAntiguedadSaldos`
+
+Devuelve el saldo acumulado histórico de facturas PPD sin complemento, desglosado por antigüedad. Es la fuente del **total por cobrar global** que ya no aparece en `GetPorCobrar`.
+
+**Request:** sin parámetros adicionales.
+
+**Response esperado:**
+```json
+{
+  "success": true,
+  "saldo_0": "19030.000000",
+  "saldo_1_30": "9971.360000",
+  "saldo_31_60": "42272.680000",
+  "saldo_61_90": "19289.460000",
+  "saldo_91": "4267281.102392",
+  "saldo_total": "4357844.602392"
+}
+```
+
+| Campo | Significado |
+|---|---|
+| `saldo_0` | Al corriente (sin vencer) |
+| `saldo_1_30` | Vencido 1–30 días |
+| `saldo_31_60` | Vencido 31–60 días |
+| `saldo_61_90` | Vencido 61–90 días |
+| `saldo_91` | Vencido más de 90 días |
+| `saldo_total` | Suma de todos los rangos |
+
+**Tarjeta `AntiguedadSaldos`:**
+- Título: "Antigüedad de saldos"
+- Subtítulo: "Saldo total: $X,XXX,XXX" (formateado en MXN)
+- Gráfica de barras horizontales, una barra por rango
+- Cada barra muestra el importe + etiqueta de rango
+- Colores progresivos por urgencia: `saldo_0` → gris neutro, `saldo_1_30` → amarillo, `saldo_31_60` → naranja, `saldo_61_90` → rojo claro, `saldo_91` → rojo intenso
+- Si un rango es `"0"` o `"0.000000"`, la barra no se renderiza (se omite del gráfico)
+
 ---
 
 ## Estrategia de caché — Stale-While-Revalidate con disparo retrasado
@@ -124,7 +166,7 @@ Mount de DashboardPage
 │
 │   [usuario permanece ≥ 1.5 s]
 │   └─ 3. Promise.allSettled([GetMontoFacturado, GetPorCobrar,
-│               GetIngresos, GetCancelacionesPendientes])
+│               GetIngresos, GetAntiguedadSaldos, GetCancelacionesPendientes])
 │         Cada card muestra su propio estado (ok / error / cargando)
 │         On success total → escribe localStorage["e4c_dashboard"]
 │
@@ -136,11 +178,21 @@ Mount de DashboardPage
 ```typescript
 // key: "e4c_dashboard"
 type DashboardCache = {
-  facturado:  { mes_actual: string; mes_anterior: string };
-  porCobrar:  { total: string };
-  ingresos:   { mes_actual: string; mes_anterior: string };
-  cancelaciones: CancelacionPendiente[];
-  fetchedAt:  string; // ISO 8601
+  facturado:       { mes_actual: string; mes_anterior: string };
+  porCobrar:       { mes_actual: string; mes_anterior: string };
+  ingresos:        { mes_actual: string; mes_anterior: string };
+  antiguedadSaldos: AntiguedadSaldos;
+  cancelaciones:   CancelacionPendiente[];
+  fetchedAt:       string; // ISO 8601
+};
+
+type AntiguedadSaldos = {
+  saldo_0: string;
+  saldo_1_30: string;
+  saldo_31_60: string;
+  saldo_61_90: string;
+  saldo_91: string;
+  saldo_total: string;
 };
 
 type CancelacionPendiente = {
@@ -164,22 +216,35 @@ type CancelacionPendiente = {
 ┌─────────────────────────────┐
 │  Dashboard           👤     │  TopBar
 ├─────────────────────────────┤
+│  Abril 2026 · vs Marzo      │  ← período (solo aplica a tarjetas 1–3)
 │                             │
 │  ╔═══════════════════════╗  │
 │  ║ Monto facturado       ║  │
 │  ║ $1,250,000            ║  │
-│  ║ ▲ 27.6% vs abril      ║  │
+│  ║ ▲ 27.6% vs Marzo      ║  │
 │  ╚═══════════════════════╝  │
 │                             │
 │  ╔═══════════════════════╗  │
-│  ║ Por cobrar            ║  │
+│  ║ Por cobrar            ║  │  ← solo mes actual
 │  ║ $340,000              ║  │
+│  ║ ▼ 17.1% vs Marzo      ║  │
 │  ╚═══════════════════════╝  │
 │                             │
 │  ╔═══════════════════════╗  │
 │  ║ Ingresos registrados  ║  │
 │  ║ $890,000              ║  │
-│  ║ ▲ 17.1% vs abril      ║  │
+│  ║ ▲ 17.1% vs Marzo      ║  │
+│  ╚═══════════════════════╝  │
+│                             │
+│  ╔═══════════════════════╗  │
+│  ║ Antigüedad de saldos  ║  │  ← cartera acumulada histórica
+│  ║ Saldo total: $4,357,844 ║ │
+│  ║ ─────────────────     ║  │
+│  ║ Al corriente  ████░   ║  │  (gris)
+│  ║ 1–30 días     ██░░░   ║  │  (amarillo)
+│  ║ 31–60 días    ███░░   ║  │  (naranja)
+│  ║ 61–90 días    ██░░░   ║  │  (rojo claro)
+│  ║ +90 días      █████   ║  │  (rojo intenso)
 │  ╚═══════════════════════╝  │
 │                             │
 │  ╔═══════════════════════╗  │
@@ -188,17 +253,16 @@ type CancelacionPendiente = {
 │  ║ ─────────────────     ║  │
 │  ║ A-1042 · EMPRESA...   ║  │
 │  ║ $5,800 · 10 abr       ║  │
-│  ║ ─────────────────     ║  │
-│  ║ A-1038 · CLIENTE...   ║  │
 │  ╚═══════════════════════╝  │
 │                             │
 └─────────────────────────────┘
 ```
 
-- Las tarjetas 1–3 muestran `Skeleton` mientras cargan.
+- Las tarjetas 1–4 muestran `Skeleton` mientras cargan.
 - El Δ% se muestra verde si positivo (▲), rojo si negativo (▼), gris si = 0.
-- La tarjeta 4 muestra la lista completa (sin paginación); si está vacía muestra "Sin cancelaciones pendientes".
-- Cada fila muestra un badge de estado: `Plazo vencido` en rojo (acción urgente) y `En proceso` en amarillo (en espera).
+- La tarjeta 4 (`AntiguedadSaldos`) usa barras horizontales proporcionales al `saldo_total`; rangos con valor `0` se omiten.
+- La tarjeta 5 muestra la lista completa (sin paginación); si está vacía muestra "Sin cancelaciones pendientes".
+- Cada fila de cancelaciones muestra un badge de estado: `Plazo vencido` en rojo (acción urgente) y `En proceso` en amarillo (en espera).
 - En error de fetch, cada tarjeta muestra su propio mensaje de error con botón "Reintentar" (dispara solo ese endpoint sin esperar 1.5 s).
 
 ---
@@ -208,13 +272,14 @@ type CancelacionPendiente = {
 ```
 src/
   endpoints/
-    dashboard.ts          ← GetMontoFacturado | GetPorCobrar | GetIngresos | GetCancelacionesPendientes
+    dashboard.ts          ← GetMontoFacturado | GetPorCobrar | GetIngresos | GetAntiguedadSaldos | GetCancelacionesPendientes
   lib/
     dashboardCache.ts     ← read/write/clear helpers sobre localStorage["e4c_dashboard"]
   pages/
     DashboardPage.tsx     ← lógica de caché + disparo retrasado + grid de tarjetas
   components/dashboard/
     MetricCard.tsx        ← tarjeta genérica: label + valor + Δ% opcional + skeleton
+    AntiguedadSaldosCard.tsx ← gráfica de barras horizontales por rango + saldo total
     CancelacionesList.tsx ← tarjeta de lista de cancelaciones pendientes
 ```
 
