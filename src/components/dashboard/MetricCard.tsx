@@ -11,9 +11,12 @@ function formatMXN(value: string): string {
 function Delta({ mesActual, mesAnterior, mesAnteriorLabel }: { mesActual: string; mesAnterior: string; mesAnteriorLabel?: string }) {
   const actual = parseFloat(mesActual);
   const anterior = parseFloat(mesAnterior);
-  if (anterior === 0) return null;
-  const pct = ((actual - anterior) / anterior) * 100;
   const vsLabel = `vs ${mesAnteriorLabel ?? "mes anterior"}`;
+  if (anterior === 0) {
+    if (actual === 0) return null;
+    return <span className="text-sm font-medium text-green-600">▲ nuevo — sin datos {vsLabel}</span>;
+  }
+  const pct = ((actual - anterior) / anterior) * 100;
   if (pct === 0) return <span className="text-sm text-muted-foreground">= 0% {vsLabel}</span>;
   const positive = pct > 0;
   return (
