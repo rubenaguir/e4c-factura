@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { navItems } from "./navItems";
@@ -42,11 +42,27 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         ))}
       </nav>
 
-      {/* Footer: usuario + logout */}
+      {/* Footer: usuario + perfil + logout */}
       <div className={cn("border-t px-2 py-3 space-y-1", collapsed && "flex flex-col items-center")}>
         {!collapsed && usuario && (
           <p className="text-xs text-muted-foreground px-2 truncate">{usuario}</p>
         )}
+        <NavLink
+          to="/perfil"
+          title={collapsed ? "Perfil" : undefined}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors",
+              collapsed ? "justify-center" : "",
+              isActive
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )
+          }
+        >
+          <Settings className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Perfil</span>}
+        </NavLink>
         <button
           onClick={logout}
           title="Cerrar sesión"

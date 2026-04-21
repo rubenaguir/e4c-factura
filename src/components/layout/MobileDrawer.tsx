@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LogOut, X } from "lucide-react";
+import { LogOut, X, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { navItems } from "./navItems";
 
@@ -65,6 +65,21 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           {usuario && (
             <p className="text-xs text-muted-foreground px-3 truncate">{usuario}</p>
           )}
+          <NavLink
+            to="/perfil"
+            onClick={onClose}
+            className={({ isActive }) =>
+              [
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              ].join(" ")
+            }
+          >
+            <Settings className="h-4 w-4 shrink-0" />
+            Perfil
+          </NavLink>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 rounded-md px-3 py-2 text-sm w-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
