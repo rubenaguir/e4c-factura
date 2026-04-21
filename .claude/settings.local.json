@@ -7,7 +7,9 @@
       "Bash(npx tsc:*)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(npx sharp-cli:*)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'docs\\(spec\\): actualizar §13 — empresa_id ya no se envía en UploadCertForFolios *)"
     ],
     "additionalDirectories": [
       "C:/wamp/www/SisnetV3Desarrollo"

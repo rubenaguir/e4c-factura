@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useSnackbar } from "@/context/useSnackbar";
 import {
   loadBasicData,
@@ -9,7 +8,6 @@ import {
 import { loadRegimenFiscal, type RegimenFiscalRecord } from "@/api/endpoints/lovs";
 
 export function useEmpresaForm() {
-  const { empresaId } = useAuth();
   const { showError, showSuccess } = useSnackbar();
 
   const [loading, setLoading] = useState(true);
@@ -58,11 +56,6 @@ export function useEmpresaForm() {
   }, [showError]);
 
   async function submitUpdate() {
-    if (!empresaId) {
-      showError("ID de empresa no disponible");
-      return;
-    }
-
     setSaving(true);
     try {
       const payload: UpdateBasicDataPayload = {
@@ -79,7 +72,7 @@ export function useEmpresaForm() {
         codigo_postal: codigoPostal,
       };
 
-      const response = await updateBasicData(empresaId, payload);
+      const response = await updateBasicData(payload);
 
       setNombre(response.record.nombre);
       setRfc(response.record.rfc);

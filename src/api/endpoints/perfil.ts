@@ -50,12 +50,11 @@ export function loadBasicData(): Promise<EmpresaData> {
 
 /** Actualiza los datos básicos de la empresa */
 export function updateBasicData(
-  empresaId: string,
-  payload: Omit<UpdateBasicDataPayload, "">
+  payload: UpdateBasicDataPayload
 ): Promise<{ msg: string; record: EmpresaData }> {
   return apiCall<{ msg: string; record: EmpresaData }>(
     "sistema:empresas:empresas:UpdateBasicData",
-    { empresa_id: empresaId, ...payload }
+    payload as unknown as Record<string, string | number | boolean>
   );
 }
 
