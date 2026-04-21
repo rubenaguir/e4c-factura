@@ -53,7 +53,7 @@ export default function LoginPage() {
       }
       if (opciones.length === 1) {
         // Auto-login directo
-        await login(values.usuario, values.contrasena, opciones[0].empresa_id, opciones[0].sucursal_id);
+        await login(values.usuario, values.contrasena, opciones[0].empresa_id, opciones[0].empresa_sucursal_id);
         navigate("/", { replace: true });
         return;
       }
