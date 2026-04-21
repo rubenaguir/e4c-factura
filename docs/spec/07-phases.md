@@ -113,7 +113,28 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ---
 
-## Fase 6 — PWA en producción ⚠️ Pendiente
+## Fase 6 — Perfil y Configuración de Empresa ⚠️ Pendiente
+
+**Entregable:** pantalla de configuración con datos de empresa, cambio de contraseña, y carga de certificado fiscal (CSD).
+
+1. `src/endpoints/perfil.ts` — wraps: `LoadBasicData`, `UpdateBasicData`, `Update` (cambio contraseña), `UploadCertForFolios`
+2. `src/hooks/useEmpresaForm.ts` — estado de datos de empresa + submit
+3. `src/hooks/useCambioContrasenaForm.ts` — estado de cambio de contraseña + validación local
+4. `src/hooks/useCsdForm.ts` — estado de upload CSD + manejo de `FormData` (multipart)
+5. `src/components/perfil/EmpresaInfoCard.tsx` — tarjeta de información (campos readonly + editables)
+6. `src/components/perfil/CambioContrasenaCard.tsx` — tarjeta de cambio de contraseña
+7. `src/components/perfil/CsdUploadCard.tsx` — tarjeta de upload CSD con inputs de archivo
+8. `src/pages/PerfilPage.tsx` — orquestación de las tres tarjetas + LoadBasicData al montar
+9. Agregar ruta `/perfil` al AppShell
+10. Acceso desde sidebar (desktop) + MobileDrawer (mobile)
+
+**Leer antes:** `docs/spec/13-perfil-empresa.md`
+
+**Éxito:** login → navegar a Perfil → editar datos, cambiar contraseña, subir CSD; todas las mutaciones persisten contra backend real.
+
+---
+
+## Fase 7 — PWA en producción ⚠️ Pendiente
 
 1. `vite build`
 2. Despliegue en raiz Apache (`/`)
@@ -124,7 +145,7 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ---
 
-## Fase 7 — Dashboard de indicadores ⚠️ Pendiente
+## Fase 8 — Dashboard de indicadores ⚠️ Pendiente
 
 **Entregable:** pantalla de inicio con 4 tarjetas de KPIs operativos del mes.
 
@@ -141,7 +162,7 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ---
 
-## Fase 8 — Mejoras iterativas
+## Fase 9 — Mejoras iterativas
 
 - Notificaciones push (MQTT/WebPush)
 - CRUD completo de productos (pendiente agent backend)

@@ -87,6 +87,7 @@ React 19 · Vite 5 · TypeScript 5 · React Router v6 · Tailwind 3 · shadcn/ui
 | Contratos backend ingresos (ejemplos request/response) | `docs/spec/09-sv3-contracts-ingresos.md` |
 | **Pago integrado PUE en FacturaDetail** (pendiente backend) | `docs/spec/10-pago-integrado-pue.md` |
 | **Dashboard de indicadores** (Fase 7) | `docs/spec/12-dashboard.md` |
+| **Perfil y configuración de empresa / CSD** | `docs/spec/13-perfil-empresa.md` |
 
 ### Qué leer por fase
 
