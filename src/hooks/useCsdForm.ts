@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { useSnackbar } from "@/context/useSnackbar";
 import { uploadCertForFolios } from "@/api/endpoints/perfil";
 
 export function useCsdForm() {
-  const { empresaId } = useAuth();
   const { showError, showSuccess } = useSnackbar();
 
   const [cerFile, setCerFile] = useState<File | null>(null);
@@ -13,15 +11,14 @@ export function useCsdForm() {
   const [uploading, setUploading] = useState(false);
 
   async function submitUpload() {
-    if (!empresaId || !cerFile || !keyFile) {
-      showError("Archivos y empresa requeridos");
+    if (!cerFile || !keyFile) {
+      showError("Archivos requeridos");
       return;
     }
 
     setUploading(true);
     try {
       const response = await uploadCertForFolios(
-        empresaId,
         cerFile,
         keyFile,
         contrasena

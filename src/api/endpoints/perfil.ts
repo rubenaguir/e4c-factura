@@ -69,7 +69,6 @@ export function cambioContrasena(payload: Record<string, unknown>): Promise<{ ms
 
 /** Sube el certificado y llave privada para folios — usa fetch directo con FormData */
 export async function uploadCertForFolios(
-  empresaId: string,
   cerFile: File,
   keyFile: File,
   contrasena: string
@@ -79,7 +78,6 @@ export async function uploadCertForFolios(
   const formData = new FormData();
   formData.append("opReq", "sistema:empresas:empresas:UploadCertForFolios");
   formData.append("session", session);
-  formData.append("empresa_id", empresaId);
   formData.append("archivo_certificado", cerFile);
   formData.append("archivo_llave_privada", keyFile);
   formData.append("contrasena", contrasena);
