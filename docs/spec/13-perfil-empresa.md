@@ -96,7 +96,7 @@ Layout de secciones apiladas tipo "settings page". Cada sección es una tarjeta 
 - Los inputs de archivo muestran el nombre del archivo seleccionado como confirmación visual.
 - `LoadBasicData` no devuelve información del CSD; no hay badge de vigencia en esta versión.
 - Al presionar **Subir CSD** se llama `UploadCertForFolios` con `multipart/form-data` (ver nota en endpoint).
-- `empresa_id` se envía en el body multipart (excepción a la regla 7 — confirmado en el contrato).
+- `empresa_id` **no** se envía — el backend lo toma del JWT.
 - La contraseña de la llave privada **nunca** se almacena en estado persistente; solo existe en el estado del formulario durante la sesión.
 - Toast de éxito con `response.msg`.
 
@@ -243,7 +243,7 @@ opReq=sistema%3Acambio_contrasena%3Acambio_contrasena%3AUpdate
 
 **opReq:** `sistema:empresas:empresas:UploadCertForFolios`  
 **Cuándo:** submit de la sección "Certificado de Sello Digital".  
-**Implementación:** `fetch` directo con `FormData` — no puede usar `apiCall` porque el backend espera `multipart/form-data`. El JWT va como campo `session` dentro del `FormData`. Campos: `archivo_certificado` (File, `.cer`), `archivo_llave_privada` (File, `.key`), `contrasena` (string), `opReq` (string), `session` (JWT string), `empresa_id` (string — excepción a regla 7).
+**Implementación:** `fetch` directo con `FormData` — no puede usar `apiCall` porque el backend espera `multipart/form-data`. El JWT va como campo `session` dentro del `FormData`. Campos: `archivo_certificado` (File, `.cer`), `archivo_llave_privada` (File, `.key`), `contrasena` (string), `opReq` (string), `session` (JWT string). El `empresa_id` lo toma el backend del JWT.
 
 **Request:**
 ```
@@ -259,10 +259,6 @@ sistema:empresas:empresas:UploadCertForFolios
 Content-Disposition: form-data; name="session"
 
 <JWT>
-------WebKitFormBoundary
-Content-Disposition: form-data; name="empresa_id"
-
-DEMO
 ------WebKitFormBoundary
 Content-Disposition: form-data; name="archivo_certificado"; filename="eku9003173c9.cer"
 Content-Type: application/x-x509-ca-cert
