@@ -16,6 +16,37 @@ function apiDateToIso(apiDate: string): string {
   return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
 }
 
+/** Aplicación de un ingreso a una factura (CxC). `importe` va en la moneda del pago. */
+export interface Aplicacion {
+  importe: string;
+  tipoCambioPago: string;
+}
+
+/** ¿Se requiere capturar tipo_cambio_pago para esta factura dado el pago? */
+export function needsTipoCambioPago(cuentaMoneda: string, monedaPago: string): boolean {
+  return cuentaMoneda !== monedaPago && monedaPago === "MXN";
+}
+
+/** Importe a aplicar por defecto al seleccionar la factura, en la moneda del pago. */
+function defaultImporte(cuenta: CuentaCobrar, monedaPago: string): string {
+  if (monedaPago === "MXN") return parseFloat(cuenta.saldo_moneda_base || "0").toFixed(2);
+  if (monedaPago === cuenta.moneda_id) return parseFloat(cuenta.saldo || "0").toFixed(2);
+  return "";
+}
+
+function buildDescripcion(cuentas: CuentaCobrar[], aplicaciones: Record<string, Aplicacion>): string {
+  let descr = "";
+  for (const c of cuentas) {
+    const ap = aplicaciones[c.num_cta_cobrar];
+    if (!ap || parseFloat(ap.importe || "0") <= 0) continue;
+    const ref = `${c.documento_serie}${c.documento_folio}`;
+    descr += descr === ""
+      ? `${c.documento_descr} ${ref}`
+      : `, ${ref}`;
+  }
+  return descr === "" ? "" : `PAGO DE ${descr}`;
+}
+
 export function useIngresoForm() {
   const { showError } = useSnackbar();
 
@@ -35,9 +66,9 @@ export function useIngresoForm() {
   const debRef = useRef<number | undefined>(undefined);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // Cuentas por cobrar
+  // Cuentas por cobrar + aplicaciones (multi-factura)
   const [cuentasCobrar, setCuentasCobrar] = useState<CuentaCobrar[]>([]);
-  const [selectedCuenta, setSelectedCuenta] = useState<CuentaCobrar | null>(null);
+  const [aplicaciones, setAplicaciones] = useState<Record<string, Aplicacion>>({});
   const [loadingCuentas, setLoadingCuentas] = useState(false);
 
   // Payment
@@ -46,8 +77,9 @@ export function useIngresoForm() {
   const [formaPagoDescr, setFormaPagoDescr] = useState("");
   const [monedaId, setMonedaId] = useState("MXN");
   const [tipoCambio, setTipoCambio] = useState("1");
-  const [importe, setImporte] = useState("");
-  const [descripcion, setDescripcion] = useState("");
+  const [importe, setImporte] = useState(""); // solo para poblar la vista readonly
+  const [descripcion, setDescripcionRaw] = useState("");
+  const [descripcionTouched, setDescripcionTouched] = useState(false);
   const [referencia, setReferencia] = useState("");
   const [noAutorizacion, setNoAutorizacion] = useState("");
 
@@ -59,6 +91,17 @@ export function useIngresoForm() {
   const [satBancoDest, setSatBancoDest] = useState("");
   const [satBancoDestDescr, setSatBancoDestDescr] = useState("");
 
+  // Total a aplicar = suma de los importes por factura (moneda del pago)
+  const importeTotal = Object.values(aplicaciones)
+    .reduce((sum, ap) => sum + (parseFloat(ap.importe || "0") || 0), 0)
+    .toFixed(2);
+
+  // Auto-generar descripción a partir de las facturas seleccionadas (salvo edición manual)
+  useEffect(() => {
+    if (descripcionTouched) return;
+    setDescripcionRaw(buildDescripcion(cuentasCobrar, aplicaciones));
+  }, [cuentasCobrar, aplicaciones, descripcionTouched]);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -68,6 +111,11 @@ export function useIngresoForm() {
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const setDescripcion = useCallback((v: string) => {
+    setDescripcionTouched(true);
+    setDescripcionRaw(v);
   }, []);
 
   function populateFromIngreso(r: IngresoDetalle) {
@@ -105,8 +153,8 @@ export function useIngresoForm() {
 
     setLoadingCuentas(true);
     setCuentasCobrar([]);
-    setSelectedCuenta(null);
-    setImporte("");
+    setAplicaciones({});
+    setDescripcionTouched(false);
 
     const [bancosRes, cuentasRes] = await Promise.allSettled([
       searchCuentasBancariasCliente(lov.cliente_id),
@@ -154,32 +202,81 @@ export function useIngresoForm() {
   const clearCliente = () => {
     setClienteId(""); setClienteNombre(""); setClienteRfc("");
     setClienteCP(""); setClienteRegimen("");
-    setCuentasCobrar([]); setSelectedCuenta(null); setImporte("");
+    setCuentasCobrar([]); setAplicaciones({});
+    setDescripcionTouched(false); setDescripcionRaw("");
   };
 
-  const handleCuentaSelect = (numCtaCobrar: string) => {
-    const cuenta = cuentasCobrar.find(c => c.num_cta_cobrar === numCtaCobrar) ?? null;
-    setSelectedCuenta(cuenta);
-    if (cuenta) {
-      setImporte(parseFloat(cuenta.saldo).toFixed(2));
-      setMonedaId(cuenta.moneda_id);
-      setDescripcion(prev => prev.trim() === ""
-        ? `PAGO DE FACTURA ${cuenta.documento_serie}${cuenta.documento_folio}`
-        : prev);
-      setReferencia(prev => prev.trim() === ""
-        ? `${cuenta.documento_serie}${cuenta.documento_folio}`
-        : prev);
-    }
-  };
+  // ── Multi-factura ──────────────────────────────────────────────────────
+  const toggleCuenta = useCallback((numCtaCobrar: string) => {
+    setAplicaciones(prev => {
+      const next = { ...prev };
+      if (next[numCtaCobrar]) {
+        delete next[numCtaCobrar];
+      } else {
+        const cuenta = cuentasCobrar.find(c => c.num_cta_cobrar === numCtaCobrar);
+        next[numCtaCobrar] = {
+          importe: cuenta ? defaultImporte(cuenta, monedaId) : "",
+          tipoCambioPago: "",
+        };
+      }
+      return next;
+    });
+  }, [cuentasCobrar, monedaId]);
+
+  const setAplicacionImporte = useCallback((numCtaCobrar: string, value: string) => {
+    setAplicaciones(prev => prev[numCtaCobrar]
+      ? { ...prev, [numCtaCobrar]: { ...prev[numCtaCobrar], importe: value } }
+      : prev);
+  }, []);
+
+  const setAplicacionTipoCambioPago = useCallback((numCtaCobrar: string, value: string) => {
+    setAplicaciones(prev => prev[numCtaCobrar]
+      ? { ...prev, [numCtaCobrar]: { ...prev[numCtaCobrar], tipoCambioPago: value } }
+      : prev);
+  }, []);
+
+  /** Cambiar la moneda del pago re-aplica el importe por defecto a las filas seleccionadas. */
+  const changeMonedaPago = useCallback((nuevaMoneda: string) => {
+    setMonedaId(nuevaMoneda);
+    if (nuevaMoneda === "MXN") setTipoCambio("1");
+    setAplicaciones(prev => {
+      const next: Record<string, Aplicacion> = {};
+      for (const num of Object.keys(prev)) {
+        const cuenta = cuentasCobrar.find(c => c.num_cta_cobrar === num);
+        next[num] = {
+          importe: cuenta ? defaultImporte(cuenta, nuevaMoneda) : prev[num].importe,
+          tipoCambioPago: "",
+        };
+      }
+      return next;
+    });
+  }, [cuentasCobrar]);
 
   const validate = (): string | null => {
     if (!clienteId) return "Selecciona un cliente";
-    if (!selectedCuenta) return "Selecciona la factura a aplicar";
-    const imp = parseFloat(importe);
-    if (isNaN(imp) || imp <= 0) return "El importe debe ser mayor a 0";
+    const seleccionadas = Object.entries(aplicaciones);
+    const conImporte = seleccionadas.filter(([, ap]) => parseFloat(ap.importe || "0") > 0);
+    if (conImporte.length === 0) return "Selecciona al menos una factura con importe mayor a 0";
     if (!formaPagoId) return "Selecciona la forma de pago";
     if (monedaId !== "MXN" && (isNaN(parseFloat(tipoCambio)) || parseFloat(tipoCambio) <= 0))
       return "El tipo de cambio debe ser mayor a 0";
+
+    for (const [num, ap] of conImporte) {
+      const cuenta = cuentasCobrar.find(c => c.num_cta_cobrar === num);
+      if (!cuenta) continue;
+      const imp = parseFloat(ap.importe);
+      const ref = `${cuenta.documento_serie}${cuenta.documento_folio}`;
+      if (needsTipoCambioPago(cuenta.moneda_id, monedaId)) {
+        const tcp = parseFloat(ap.tipoCambioPago);
+        if (isNaN(tcp) || tcp <= 0) return `Captura el TC de pago para la factura ${ref}`;
+      } else if (monedaId === cuenta.moneda_id) {
+        if (imp > parseFloat(cuenta.saldo) + 0.005)
+          return `El importe de ${ref} excede su saldo (${cuenta.saldo})`;
+      } else if (monedaId === "MXN") {
+        if (imp > parseFloat(cuenta.saldo_moneda_base) + 0.005)
+          return `El importe de ${ref} excede su saldo (${cuenta.saldo_moneda_base})`;
+      }
+    }
     return null;
   };
 
@@ -187,11 +284,12 @@ export function useIngresoForm() {
     setClienteId(""); setClienteNombre(""); setClienteRfc("");
     setClienteCP(""); setClienteRegimen(""); setLoadingCliente(false);
     setSearchQuery(""); setSearchResults([]); setShowDrop(false); setSearching(false);
-    setCuentasCobrar([]); setSelectedCuenta(null); setLoadingCuentas(false);
+    setCuentasCobrar([]); setAplicaciones({}); setLoadingCuentas(false);
     setFechaPagoIso(todayIso());
     setFormaPagoId(""); setFormaPagoDescr("");
     setMonedaId("MXN"); setTipoCambio("1");
-    setImporte(""); setDescripcion(""); setReferencia(""); setNoAutorizacion("");
+    setImporte(""); setDescripcionRaw(""); setDescripcionTouched(false);
+    setReferencia(""); setNoAutorizacion("");
     setBancoId(""); setBancoDescr("");
     setSatCtaOri(""); setSatCtaDest("");
     setSatBancoDest(""); setSatBancoDestDescr("");
@@ -202,13 +300,13 @@ export function useIngresoForm() {
     clienteId, clienteNombre, clienteRfc, clienteCP, clienteRegimen, loadingCliente,
     // Search
     searchQuery, searchResults, showDrop, setShowDrop, searching, searchContainerRef,
-    // Cuentas
-    cuentasCobrar, selectedCuenta, loadingCuentas,
+    // Cuentas / aplicaciones
+    cuentasCobrar, aplicaciones, loadingCuentas, importeTotal,
     // Payment
     fechaPagoIso, setFechaPagoIso,
     formaPagoId, setFormaPagoId,
     formaPagoDescr, setFormaPagoDescr,
-    monedaId, setMonedaId,
+    monedaId, setMonedaId, changeMonedaPago,
     tipoCambio, setTipoCambio,
     importe, setImporte,
     descripcion, setDescripcion,
@@ -226,7 +324,9 @@ export function useIngresoForm() {
     handleSearchQueryChange,
     handleSearchSelect,
     clearCliente,
-    handleCuentaSelect,
+    toggleCuenta,
+    setAplicacionImporte,
+    setAplicacionTipoCambioPago,
     validate,
     reset,
   };

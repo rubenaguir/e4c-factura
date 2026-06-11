@@ -14,5 +14,9 @@
     "additionalDirectories": [
       "C:/wamp/www/SisnetV3Desarrollo"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright",
+    "postgres"
+  ]  
 }

@@ -242,16 +242,23 @@ Cuando `metodoPago === "PUE"` y la acción es `Add`, el `buildPayload()` incluye
 
 ---
 
-### Sección: Factura a aplicar
+### Sección: Facturas a aplicar (multi-factura)
 
-Un selector (Select / Combobox) con las facturas pendientes del cliente obtenidas de `SearchCuentasCobrar`. Al seleccionar una factura:
+Lista de las facturas pendientes del cliente obtenidas de `SearchCuentasCobrar`, cada una con un **checkbox** para incluirla en el ingreso. Un mismo ingreso puede aplicar **parcial o totalmente a varias facturas** (ej.: ingreso de 5000 → 3000 a la factura A1 dejando saldo 7000, y 2000 a la factura A2 dejándola en cero).
 
-- Autocompletar `importe` con el valor de `saldo` de la factura seleccionada
-- Mostrar en solo lectura: Serie/Folio, Fecha, Moneda, Total, Saldo, Tipo (PUE/PPD)
+Al marcar una factura:
 
-> **Decisión de diseño:** la UI aplica el pago a una sola factura por registro de ingreso (simplificación respecto al legacy). El payload envía únicamente `cuentas_cobrar[0][...]` con la factura seleccionada. No se envían registros con `importe=0`. La estructura `cuentas_cobrar[N][campo]` se preserva para alineación futura con el backend legacy si se requiere multi-factura.
+- Se agrega una fila editable con su **Importe a aplicar** (en la moneda del pago), precargado según la regla de pre-llenado (ver abajo).
+- Si `factura.moneda_id ≠ moneda_id` del pago **y** el pago es `MXN`, se muestra además un campo **TC pago** (`tipo_cambio_pago`) **requerido**; en los demás casos se envía vacío y lo calcula el backend.
+- Mostrar en solo lectura: Serie/Folio, Fecha, Moneda, Total, Saldo, Tipo (PUE/PPD).
 
-**Campos en estado (no necesariamente visibles):** `num_cta_cobrar`, `documento`, `cliente_id`, `rfc`, `nombre`, `subtotal`, `impuestos_ret`, `impuestos_tras`, `tipo_cambio`, `total_moneda_base`, `saldo_moneda_base`
+**Pre-llenado del importe por renglón** (replica el grid legacy): si el pago es `MXN` → `saldo_moneda_base`; si el pago es la misma moneda que la factura → `saldo`; en otro caso → vacío (lo captura el usuario).
+
+**Importe total del ingreso = suma de los importes por factura** (auto-calculado, solo lectura). El backend valida que `Σ importe == importe` del ingreso ([Ingreso.class.php::ValidateCuentasCobrar](../../../../wamp/www/SisnetV3Desarrollo/php/classes/Tesoreria/Ingreso.class.php)).
+
+El payload envía una fila `cuentas_cobrar[N][...]` por cada factura seleccionada con `importe > 0`; las de `importe = 0` se omiten. El `importe` de cada renglón va en la **moneda del pago**; el backend recalcula equivalencias y descuenta el saldo de cada factura. **No se recalcula nada de moneda en el frontend.**
+
+**Campos en estado (no necesariamente visibles):** `num_cta_cobrar`, `documento`, `documento_serie`, `documento_folio`, `cliente_id`, `rfc`, `nombre`, `subtotal`, `impuestos_ret`, `impuestos_tras`, `tipo_cambio`, `total_moneda_base`, `saldo_moneda_base`
 
 ---
 
@@ -263,7 +270,7 @@ Un selector (Select / Combobox) con las facturas pendientes del cliente obtenida
 | Forma de pago | `forma_pago` + `forma_pago_descr` | LOV SAT (clave + descripción) |
 | Moneda | `moneda_id` | `MXN` \| `USD` |
 | Tipo de cambio | `tipo_cambio` | Solo editable si moneda ≠ MXN |
-| Importe | `importe` | Autocompletado con saldo; editable |
+| Importe | `importe` | **Auto-calculado** = suma de los importes por factura; solo lectura |
 | Descripción | `descripcion` | Texto libre, ej. `"PAGO DE FACTURA F1532"` |
 | Referencia | `referencia` | Opcional |
 | No. autorización | `no_autorizacion` | Opcional |
@@ -289,10 +296,11 @@ Al seleccionar cliente, `SearchCuentasBancariasCliente` devuelve las cuentas pre
 ### Validaciones antes de guardar
 
 - Cliente seleccionado
-- Factura seleccionada
-- `importe > 0`
+- Al menos una factura seleccionada con `importe > 0`
 - `forma_pago` seleccionada
 - Si `moneda_id ≠ MXN`: `tipo_cambio > 0`
+- Por cada factura con moneda distinta a la del pago y pago `MXN`: `tipo_cambio_pago > 0`
+- El importe por factura no excede su saldo (caso misma moneda / pago MXN; el resto lo valida el backend)
 
 ---
 

@@ -18,8 +18,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Search, X } from "lucide-react";
 import { PdfSheet } from "@/modules/facturacion/PdfSheet";
 import { PDF_SHEET_CLOSED, type PdfSheetState } from "@/modules/facturacion/pdfSheetState";
+import { CuentasAplicarSection } from "@/modules/ingresos/CuentasAplicarSection";
 import { useSnackbar } from "@/context/useSnackbar";
-import { useIngresoForm } from "@/hooks/useIngresoForm";
+import { useIngresoForm, needsTipoCambioPago } from "@/hooks/useIngresoForm";
+import type { CuentaCobrarPayload } from "@/api/endpoints/ingresos";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,12 +34,6 @@ function buildFechaPago(isoDate: string): string {
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
   return `${d}/${m}/${y} ${hh}:${mm}:${ss}`;
-}
-
-function fmt(val: string, moneda = "MXN") {
-  const n = parseFloat(val);
-  if (isNaN(n)) return val;
-  return `${moneda !== "MXN" ? moneda + " " : ""}${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 type ScreenState = "nueva" | "cargada" | "timbrada" | "cancelada";
@@ -183,12 +179,43 @@ export default function IngresoDetail() {
         })
         .catch(err => setLoadError(err instanceof Error ? err.message : String(err)))
         .finally(() => setLoadingPage(false));
+    } else if (isNew) {
+      // La misma instancia de IngresoDetail se reutiliza al cambiar de ruta
+      // (/ingresos/:serie/:folio → /ingresos/nuevo). Limpiar el estado para
+      // empezar un ingreso en blanco en lugar de mostrar el anterior.
+      setIngreso(null);
+      setLoadError(null);
+      setLoadingPage(false);
+      setMailNombre("");
+      setMailCorreo("");
+      setCancelMotivo("02");
+      form.reset();
     }
   }, [serie, folio]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGuardar = async () => {
     const err = form.validate();
     if (err) { showError(err); return; }
+
+    // Una fila de cuentas_cobrar por cada factura seleccionada con importe > 0.
+    // El importe va en la moneda del pago; tipo_cambio_pago solo cuando la factura
+    // es de otra moneda y el pago es MXN (el backend lo calcula en los demás casos).
+    const cuentasCobrarPayload: CuentaCobrarPayload[] = [];
+    for (const cuenta of form.cuentasCobrar) {
+      const ap = form.aplicaciones[cuenta.num_cta_cobrar];
+      if (!ap || parseFloat(ap.importe || "0") <= 0) continue;
+      cuentasCobrarPayload.push({
+        num_cta_cobrar: cuenta.num_cta_cobrar,
+        importe: ap.importe,
+        moneda_id: cuenta.moneda_id,
+        tipo_cambio: cuenta.tipo_cambio,
+        documento: cuenta.documento,
+        documento_serie: cuenta.documento_serie,
+        documento_folio: cuenta.documento_folio,
+        tipo_cambio_pago: needsTipoCambioPago(cuenta.moneda_id, form.monedaId) ? ap.tipoCambioPago : "",
+      });
+    }
+
     setSaving(true);
     try {
       const res = await add({
@@ -204,7 +231,7 @@ export default function IngresoDetail() {
         tipo_cambio: form.tipoCambio,
         forma_pago: form.formaPagoId,
         forma_pago_descr: form.formaPagoDescr,
-        importe: form.importe,
+        importe: form.importeTotal,
         no_autorizacion: form.noAutorizacion,
         referencia: form.referencia,
         fecha: "",
@@ -214,18 +241,7 @@ export default function IngresoDetail() {
         sat_banco_dest: form.satBancoDest,
         sat_banco_dest_descr: form.satBancoDestDescr,
         sat_cta_dest: form.satCtaDest,
-        cuentas_cobrar: [
-          {
-            num_cta_cobrar: form.selectedCuenta!.num_cta_cobrar,
-            importe: form.importe,
-            moneda_id: form.selectedCuenta!.moneda_id,
-            tipo_cambio: form.selectedCuenta!.tipo_cambio,
-            documento: form.selectedCuenta!.documento,
-            documento_serie: form.selectedCuenta!.documento_serie,
-            documento_folio: form.selectedCuenta!.documento_folio,
-            tipo_cambio_pago: "",
-          },
-        ],
+        cuentas_cobrar: cuentasCobrarPayload,
       });
       showSuccess(res.msg);
       navigate(`/ingresos/${res.record.serie}/${res.record.folio}`, { replace: true });
@@ -424,67 +440,20 @@ export default function IngresoDetail() {
           </div>
         </section>
 
-        {/* ── FACTURA A APLICAR ─────────────────────────────────────── */}
-        <section className="border rounded-lg">
-          <div className="bg-primary/70 px-3 py-2 rounded-t-lg">
-            <p className="section-heading">Factura a aplicar</p>
-          </div>
-          <div className="p-3 space-y-3">
-          {readonly ? (
-            <div className="space-y-2">
-              {ingreso?.cuentas_cobrar.records.map(cc => (
-                <div key={cc.num_cta_cobrar} className="rounded-lg border p-3 bg-muted/20 text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span className="font-mono font-medium">{cc.documento_serie}{cc.documento_folio}</span>
-                    <span className="font-mono">{fmt(cc.importe ?? cc.total, cc.moneda_id)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{cc.fecha}</span>
-                    <span>TC: {cc.tipo_cambio_pago ?? cc.tipo_cambio}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {form.loadingCuentas && <Skeleton className="h-9 w-full" />}
-              {!form.loadingCuentas && form.cuentasCobrar.length === 0 && form.clienteNombre && (
-                <p className="text-sm text-muted-foreground">No hay facturas pendientes de pago para este cliente.</p>
-              )}
-              {!form.loadingCuentas && form.cuentasCobrar.length > 0 && (
-                <div className="space-y-1">
-                  <Label>Factura</Label>
-                  <Select value={form.selectedCuenta?.num_cta_cobrar ?? ""} onValueChange={form.handleCuentaSelect}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar factura…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {form.cuentasCobrar.map(cc => (
-                        <SelectItem key={cc.num_cta_cobrar} value={cc.num_cta_cobrar}>
-                          {cc.documento_serie}{cc.documento_folio} — {cc.moneda_id} {fmt(cc.saldo, cc.moneda_id)} saldo
-                          {cc.metodo_pago_sat33 ? ` (${cc.metodo_pago_sat33})` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {form.selectedCuenta && (
-                <div className="rounded-lg border p-3 bg-muted/20 text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span className="font-medium">{form.selectedCuenta.documento_serie}{form.selectedCuenta.documento_folio}</span>
-                    <span className="font-mono">Total: {fmt(form.selectedCuenta.total, form.selectedCuenta.moneda_id)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{form.selectedCuenta.fecha} · {form.selectedCuenta.metodo_pago_sat33}</span>
-                    <span className="font-medium text-foreground">Saldo: {fmt(form.selectedCuenta.saldo, form.selectedCuenta.moneda_id)}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          </div>
-        </section>
+        {/* ── FACTURAS A APLICAR ────────────────────────────────────── */}
+        <CuentasAplicarSection
+          readonly={readonly}
+          ingreso={ingreso}
+          cuentasCobrar={form.cuentasCobrar}
+          aplicaciones={form.aplicaciones}
+          monedaPago={form.monedaId}
+          importeTotal={form.importeTotal}
+          loadingCuentas={form.loadingCuentas}
+          clienteNombre={form.clienteNombre}
+          onToggle={form.toggleCuenta}
+          onImporteChange={form.setAplicacionImporte}
+          onTipoCambioPagoChange={form.setAplicacionTipoCambioPago}
+        />
 
         {/* ── DATOS DEL PAGO ───────────────────────────────────────── */}
         <section className="border rounded-lg">
@@ -522,10 +491,7 @@ export default function IngresoDetail() {
 
             <div className="space-y-1">
               <Label>Moneda</Label>
-              <Select value={form.monedaId} onValueChange={v => {
-                form.setMonedaId(v);
-                if (v === "MXN") form.setTipoCambio("1");
-              }} disabled={readonly}>
+              <Select value={form.monedaId} onValueChange={form.changeMonedaPago} disabled={readonly}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="MXN">MXN – Peso mexicano</SelectItem>
@@ -542,8 +508,8 @@ export default function IngresoDetail() {
             )}
 
             <div className="space-y-1">
-              <Label>Importe</Label>
-              <Input value={form.importe} onChange={e => form.setImporte(e.target.value)} disabled={readonly} inputMode="decimal" />
+              <Label>Importe {!readonly && <span className="text-xs text-muted-foreground">(suma de facturas)</span>}</Label>
+              <Input value={readonly ? form.importe : form.importeTotal} disabled inputMode="decimal" />
             </div>
 
             <div className="space-y-1 sm:col-span-2">
@@ -558,7 +524,9 @@ export default function IngresoDetail() {
 
             <div className="space-y-1">
               <Label>Referencia</Label>
-              <Input value={readonly ? (ingreso?.cuentas_cobrar.records[0]?.num_cta_cobrar ?? form.referencia) : form.referencia}
+              <Input value={readonly
+                  ? (ingreso?.cuentas_cobrar.records.map(r => `${r.documento_serie}${r.documento_folio}`).join(", ") || form.referencia)
+                  : form.referencia}
                 onChange={e => form.setReferencia(e.target.value)} disabled={readonly} placeholder="Opcional" />
             </div>
 
