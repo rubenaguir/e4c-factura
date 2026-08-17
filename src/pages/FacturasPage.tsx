@@ -58,15 +58,34 @@ function toApiDate(isoDate: string) {
   return `${d}/${m}/${y}`;
 }
 
+function estatusCxcBadge(estatusCxc: string) {
+  switch (estatusCxc) {
+    case "P":
+      return <Badge className="bg-green-600 hover:bg-green-700">Cobrado</Badge>;
+    case "SP":
+      return <Badge variant="outline" className="border-amber-500 text-amber-700">Saldo pendiente</Badge>;
+    case "VE":
+      return <Badge variant="destructive">Vencido</Badge>;
+    case "NC":
+      return <Badge variant="outline" className="border-blue-500 text-blue-700">No cobrado</Badge>;
+    default:
+      return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Timbrada</Badge>;
+  }
+}
+
 function estatusBadge(row: FacturaRow) {
   if (row.estatus === "C")
     return <Badge variant="destructive">Cancelada</Badge>;
   if (row.estatus === "R") {
     if (row.cancelacion_estatus === "En proceso")
       return <Badge variant="outline" className="border-yellow-500 text-yellow-700">Cancel. pendiente</Badge>;
-    return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Timbrada</Badge>;
+    return estatusCxcBadge(row.estatus_cxc);
   }
   return <Badge variant="secondary">Prefactura</Badge>;
+}
+
+function showSaldo(row: FacturaRow) {
+  return row.estatus === "R" && (row.estatus_cxc === "SP" || row.estatus_cxc === "VE");
 }
 
 function fmtCurrency(value: string, moneda: string) {
@@ -106,7 +125,7 @@ const MAIL_CLOSED: MailDialogState = {
 export default function FacturasPage() {
   const navigate = useNavigate();
   const { state, pageSize, search, sendMail, printPdf } = useFacturas();
-  const { list, totalCount, loading, error, stale, page } = state;
+  const { list, totalCount, totalGlobal, cobradoGlobal, loading, error, stale, page } = state;
   const { empresaId } = useAuth();
 
   // Filters
@@ -116,7 +135,7 @@ export default function FacturasPage() {
   const [nombre, setNombre] = useState("");
   const [serie, setSerie] = useState("");
   const [folio, setFolio] = useState("");
-  const [estatus, setEstatus] = useState("*");
+  const [estatusCxc, setEstatusCxc] = useState("*");
 
   // Actions
   const { showError } = useSnackbar();
@@ -138,7 +157,7 @@ export default function FacturasPage() {
           nombre,
           serie,
           folio,
-          estatus: estatus === "*" ? "" : estatus,
+          estatus_cxc: estatusCxc === "*" ? "" : estatusCxc,
         },
         0
       );
@@ -156,7 +175,7 @@ export default function FacturasPage() {
         nombre,
         serie,
         folio,
-        estatus: estatus === "*" ? "" : estatus,
+        estatus_cxc: estatusCxc === "*" ? "" : estatusCxc,
       },
       0,
       true
@@ -227,7 +246,7 @@ export default function FacturasPage() {
     nombre,
     serie,
     folio,
-    estatus: estatus === "*" ? "" : estatus,
+    estatus_cxc: estatusCxc === "*" ? "" : estatusCxc,
   };
 
   return (
@@ -287,15 +306,17 @@ export default function FacturasPage() {
           value={folio}
           onChange={(e) => setFolio(e.target.value)}
         />
-        <Select value={estatus} onValueChange={setEstatus}>
-          <SelectTrigger className="w-32 h-9 text-sm">
+        <Select value={estatusCxc} onValueChange={setEstatusCxc}>
+          <SelectTrigger className="w-40 h-9 text-sm">
             <SelectValue placeholder="Todos" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="*">Todos</SelectItem>
-            <SelectItem value="P">Prefactura</SelectItem>
-            <SelectItem value="R">Timbradas</SelectItem>
-            <SelectItem value="C">Canceladas</SelectItem>
+            <SelectItem value="PRE">Prefactura</SelectItem>
+            <SelectItem value="P">Cobrado</SelectItem>
+            <SelectItem value="SP">Saldo pendiente</SelectItem>
+            <SelectItem value="VE">Vencido</SelectItem>
+            <SelectItem value="C">Cancelado</SelectItem>
           </SelectContent>
         </Select>
         <Button type="submit" size="sm" disabled={loading} className="h-9">
@@ -362,7 +383,14 @@ export default function FacturasPage() {
                       <td className="px-4 py-2 text-right font-mono">
                         {fmtCurrency(row.total, row.moneda_id)}
                       </td>
-                      <td className="px-4 py-2">{estatusBadge(row)}</td>
+                      <td className="px-4 py-2">
+                        {estatusBadge(row)}
+                        {showSaldo(row) && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {fmtCurrency(row.saldo, row.moneda_id)}
+                          </p>
+                        )}
+                      </td>
                       <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-1 justify-end">
                           <Button
@@ -447,6 +475,11 @@ export default function FacturasPage() {
                           {fmtCurrency(row.total, row.moneda_id)}
                         </p>
                         <div className="mt-1">{estatusBadge(row)}</div>
+                        {showSaldo(row) && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {fmtCurrency(row.saldo, row.moneda_id)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -493,6 +526,7 @@ export default function FacturasPage() {
         <div className="flex items-center justify-between px-4 py-2 border-t bg-background text-sm">
           <span className="text-muted-foreground">
             {totalCount} factura{totalCount !== 1 ? "s" : ""}
+            {` · Total ${fmtCurrency(totalGlobal, "MXN")} · Cobrado ${fmtCurrency(cobradoGlobal, "MXN")}`}
             {totalPages > 1 && ` · Página ${page + 1} de ${totalPages}`}
           </span>
           <div className="flex gap-1">

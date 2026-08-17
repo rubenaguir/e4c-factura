@@ -38,6 +38,8 @@ const PAGE_SIZE = 50;
 interface FacturasState {
   list: FacturaRow[];
   totalCount: number;
+  totalGlobal: string;
+  cobradoGlobal: string;
   filters: FacturaSearchParams;
   page: number;
   stale: boolean;
@@ -51,6 +53,8 @@ const defaultFilters: FacturaSearchParams = {};
 const initialState: FacturasState = {
   list: [],
   totalCount: 0,
+  totalGlobal: "0",
+  cobradoGlobal: "0",
   filters: defaultFilters,
   page: 0,
   stale: true,
@@ -61,7 +65,13 @@ const initialState: FacturasState = {
 
 type Action =
   | { type: "SEARCH_START"; filters: FacturaSearchParams; page: number }
-  | { type: "SEARCH_OK"; records: FacturaRow[]; totalCount: number }
+  | {
+      type: "SEARCH_OK";
+      records: FacturaRow[];
+      totalCount: number;
+      totalGlobal: string;
+      cobradoGlobal: string;
+    }
   | { type: "SEARCH_ERROR"; error: string }
   | { type: "LOAD_OK"; record: FacturaCompleta }
   | { type: "MUTATE_OK"; record: FacturaCompleta }
@@ -85,6 +95,8 @@ function reducer(state: FacturasState, action: Action): FacturasState {
         stale: false,
         list: action.records,
         totalCount: action.totalCount,
+        totalGlobal: action.totalGlobal,
+        cobradoGlobal: action.cobradoGlobal,
       };
     case "SEARCH_ERROR":
       return { ...state, loading: false, error: action.error };
@@ -205,6 +217,8 @@ export function FacturasProvider({ children }: { children: React.ReactNode }) {
           type: "SEARCH_OK",
           records: res.records,
           totalCount: res.totalCount,
+          totalGlobal: res.totalGlobal,
+          cobradoGlobal: res.cobradoGlobal,
         });
       } catch (e) {
         dispatch({

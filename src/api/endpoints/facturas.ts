@@ -268,7 +268,7 @@ export interface FacturaSearchParams {
   folio?: string;
   pedido_serie?: string;
   pedido_folio?: string;
-  estatus?: string;
+  estatus_cxc?: string;
   disable_sucursal_filter?: string;
   start?: number;
   limit?: number;
@@ -491,10 +491,12 @@ export const EMPTY_DETALLISTA: Detallista = {
 // ---------------------------------------------------------------------------
 
 export function searchFacturas(params: FacturaSearchParams) {
-  return apiCall<{ totalCount: number; records: FacturaRow[] }>(
-    `${MODULE}:Search`,
-    params as Record<string, string | number | boolean>
-  );
+  return apiCall<{
+    totalCount: number;
+    totalGlobal: string;
+    cobradoGlobal: string;
+    records: FacturaRow[];
+  }>(`${MODULE}:Search`, params as Record<string, string | number | boolean>);
 }
 
 export function loadFactura(serie: string, folio: string) {

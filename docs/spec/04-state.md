@@ -36,7 +36,7 @@ interface ModuleActions<T> {
 ```
 
 Variaciones reales por módulo:
-- `FacturasState` tiene `page: number` adicional para paginación
+- `FacturasState` tiene `page: number` adicional para paginación, y `totalGlobal`/`cobradoGlobal: string` (agregados de `Search` sobre todo el resultado filtrado — ver `docs/spec/03-api-client.md` §Facturas)
 - `ClientesContext.add()` → `Promise<{ clienteId: string; msg: string }>`
 - `IngresosContext.add()` → `Promise<{ msg: string; record: IngresoDetalle }>`
 

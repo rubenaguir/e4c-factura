@@ -203,13 +203,15 @@ Cuando `metodoPago === "PUE"` y la acción es `Add`, el `buildPayload()` incluye
 | `R` + `cancelacion_estatus: "En proceso"` | Cancelación solicitada al SAT, pendiente confirmación | Re-intentar cancelación |
 | `C` Cancelada | Cancelada en SAT | Ver PDF · Ver acuse (solo lectura) |
 
+En `FacturasPage`, el badge de estatus para `R` vigente (sin cancelación en proceso) no dice genéricamente "Timbrada": usa `estatus_cxc` para mostrar **Cobrado** (`P`), **Saldo pendiente** (`SP`), **Vencido** (`VE`) o **No cobrado** (`NC`) — ver `docs/spec/03-api-client.md` §Facturas para los valores completos. `NC` puede seguir llegando en un registro y se sigue pintando como badge, aunque ya no es seleccionable en el filtro (ver más abajo). Cuando `estatus_cxc` es `SP` o `VE` se muestra además el importe de `saldo` debajo del badge.
+
 ---
 
 ## FacturasPage (consulta)
 
-- Filtros: `fecha_inicial` (default −30 días), `fecha_final`, `rfc`, `nombre`, `serie`, `folio`, `pedido_serie`, `pedido_folio`, `estatus`, `disable_sucursal_filter`.
+- Filtros: `fecha_inicial` (default −30 días), `fecha_final`, `rfc`, `nombre`, `serie`, `folio`, `pedido_serie`, `pedido_folio`, `estatus_cxc` (Todos/Prefactura/Cobrado/Saldo pendiente/Vencido/Cancelado — `NC` "No cobrado" se retiró del `<Select>` por confundirse con Saldo pendiente en pruebas con usuarios; ver `docs/spec/03-api-client.md` §Facturas), `disable_sucursal_filter`.
 - Tabla desktop / tarjetas mobile.
-- Paginación server-side (`start`/`limit=50`).
+- Paginación server-side (`start`/`limit=50`). La barra de paginación muestra `totalCount`, y junto a él los agregados `totalGlobal` (importe total) y `cobradoGlobal` (importe cobrado) devueltos por `Search` sobre todo el resultado filtrado — no solo la página actual (ver `docs/spec/03-api-client.md` §Facturas).
 - Acciones por fila: ver, PDF, correo.
 
 ---

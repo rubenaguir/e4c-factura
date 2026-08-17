@@ -86,7 +86,7 @@ interface SucursalOption {
 
 | Acción | Params clave |
 |---|---|
-| `Search` | `fecha_inicial`, `fecha_final`, `rfc`, `nombre`, `serie`, `folio`, `pedido_serie`, `pedido_folio`, `estatus`, `disable_sucursal_filter` |
+| `Search` | `fecha_inicial`, `fecha_final`, `rfc`, `nombre`, `serie`, `folio`, `pedido_serie`, `pedido_folio`, `estatus_cxc`, `disable_sucursal_filter` |
 | `Load` | `serie`, `folio` — `empresa_id` **no se envía**, el backend lo toma del JWT |
 | `LoadPresetClientData` | `cliente_id` → devuelve `FacturaCompleta` de la última factura del cliente |
 | `Add` | payload completo (ver `docs/spec/05-screens.md` §payload) — crea y timbra en un paso |
@@ -99,7 +99,9 @@ interface SucursalOption {
 | `DownloadFactura` | pendiente documentar |
 | `SendMail` | `serie`, `folio`, `nombre`, `correo`, `asunto` |
 
-#### Search — respuesta `FacturaRow`
+#### Search — respuesta `{ totalCount, totalGlobal, cobradoGlobal, records: FacturaRow[] }`
+
+Extiende el formato genérico de §4.3: además de `totalCount`, agrega `totalGlobal` y `cobradoGlobal` — sumatorias (como string, siempre en MXN) de `total` y del importe cobrado sobre **todo el resultado filtrado**, no solo la página actual. `FacturasPage` los muestra en la barra de paginación junto al conteo (ver `docs/spec/05-screens.md` §FacturasPage).
 
 ```typescript
 interface FacturaRow {
@@ -133,6 +135,21 @@ interface FacturaRow {
   estatus_cxc: string
 }
 ```
+
+`estatus_cxc` es una extensión de `estatus` — el backend la calcula en `BuildSearchQuery` (`facturas_venta.php`) combinando `estatus`, `saldo` y `fecha_vencimiento`:
+
+| Valor | Significado | Condición backend |
+|---|---|---|
+| `C` | Cancelado | `estatus = 'C'` |
+| `PRE` | Prefactura | `estatus = 'P'` |
+| `P` | Cobrado | `estatus = 'R'` y `saldo <= 0` |
+| `SP` | Saldo pendiente | `estatus = 'R'`, `0 < saldo < total` |
+| `VE` | Vencido | `estatus = 'R'`, saldo sin cubrir y `fecha_vencimiento <= hoy` |
+| `NC` | No cobrado | `estatus = 'R'`, saldo sin cubrir y `fecha_vencimiento > hoy` — el backend lo sigue calculando en cada `FacturaRow` para el badge, pero **ya no es una opción del filtro** (ver nota abajo) |
+
+`saldo` es el importe faltante por cobrar (`COALESCE(cuentas_cobrar.saldo, total)`). En `FacturasPage`, se muestra junto al badge de estatus solo cuando `estatus_cxc` es `SP` o `VE`.
+
+`NC` se retiró del `<Select>` de filtro de `FacturasPage` (dejó de ser un valor enviable como parámetro `estatus_cxc` en `Search` desde la UI) porque en pruebas con usuarios generaba confusión con `SP`. El campo `estatus_cxc` de cada `FacturaRow` puede seguir llegando como `NC` y el badge correspondiente ("No cobrado") sigue soportado — solo se eliminó como opción seleccionable en el filtro.
 
 #### Load / AddPrefactura / Add / Stamp — respuesta `FacturaCompleta`
 

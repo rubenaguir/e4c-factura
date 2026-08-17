@@ -7,7 +7,7 @@ Consulta de factura
 Request:
 ```
 fetch("http://localhost/SisnetV3Desarrollo/php/interfase_jwt.php", {
-  "body": "fecha_inicial=01%2F04%2F2026&fecha_final=&rfc=&nombre=&serie=&folio=&pedido_serie=&pedido_folio=&estatus=&disable_sucursal_filter=&opReq=ventas%3Afacturas_venta_33%3Afacturas_venta%3ASearch",
+  "body": "fecha_inicial=01%2F04%2F2026&fecha_final=&rfc=&nombre=&serie=&folio=&pedido_serie=&pedido_folio=&estatus_cxc=&disable_sucursal_filter=&opReq=ventas%3Afacturas_venta_33%3Afacturas_venta%3ASearch",
   "method": "POST",
   "mode": "cors",
   "credentials": "include"
@@ -47,7 +47,7 @@ Response:
             "num_poliza": null,
             "saldo": "3080.000000",
             "num_cta_cobrar": "1404",
-            "estatus_cxc": "R"
+            "estatus_cxc": "NC"
         }
     ]
 }
