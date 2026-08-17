@@ -528,9 +528,15 @@ export default function FacturasPage() {
             {totalCount} factura{totalCount !== 1 ? "s" : ""}
             {` · Total ${fmtCurrency(totalGlobal, "MXN")} · Cobrado ${fmtCurrency(cobradoGlobal, "MXN")}`}
           </div>
-          <div className="flex items-center justify-between px-4 py-2 border-t">
+          <div
+            className={
+              totalPages > 1
+                ? "flex items-center justify-between px-4 py-2 border-t"
+                : "hidden md:flex items-center justify-between px-4 py-2 border-t"
+            }
+          >
             <span className="text-muted-foreground">
-              {totalPages > 1 ? `Página ${page + 1} de ${totalPages}` : ""}
+              Página {page + 1} de {totalPages}
             </span>
             <div className="flex gap-1">
               <Button
