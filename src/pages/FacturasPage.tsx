@@ -93,6 +93,10 @@ function canApplyPago(row: FacturaRow) {
   return row.estatus === "R" && row.estatus_cxc !== "P" && !!row.cliente_id;
 }
 
+function correoDisabled(row: FacturaRow) {
+  return row.estatus === "C";
+}
+
 function fmtCurrency(value: string, moneda: string) {
   const n = parseFloat(value);
   if (isNaN(n)) return value;
@@ -414,40 +418,36 @@ export default function FacturasPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {row.estatus !== "P" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              title="Descargar PDF"
-                              disabled={pdfSheet.loading}
-                              onClick={(e) => handlePdf(e, row)}
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {row.estatus === "R" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              title="Enviar por correo"
-                              onClick={(e) => handleMailOpen(e, row)}
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canApplyPago(row) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              title="Aplicar Pago"
-                              onClick={(e) => handleAplicarPago(e, row)}
-                            >
-                              <Wallet className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                            title="Descargar PDF"
+                            disabled={pdfSheet.loading}
+                            onClick={(e) => handlePdf(e, row)}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700"
+                            title={correoDisabled(row) ? "Factura cancelada" : "Enviar por correo"}
+                            disabled={correoDisabled(row)}
+                            onClick={(e) => handleMailOpen(e, row)}
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
+                            title={canApplyPago(row) ? "Aplicar Pago" : "Sin saldo pendiente"}
+                            disabled={!canApplyPago(row)}
+                            onClick={(e) => handleAplicarPago(e, row)}
+                          >
+                            <Wallet className="h-4 w-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -516,22 +516,20 @@ export default function FacturasPage() {
                     >
                       <Eye className="h-3 w-3" /> Ver
                     </Button>
-                    {row.estatus !== "P" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1 text-red-600 hover:text-red-700"
+                      disabled={pdfSheet.loading}
+                      onClick={(e) => handlePdf(e, row)}
+                    >
+                      <FileText className="h-3 w-3" /> PDF
+                    </Button>
+                    {!correoDisabled(row) && (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs gap-1"
-                        disabled={pdfSheet.loading}
-                        onClick={(e) => handlePdf(e, row)}
-                      >
-                        <FileText className="h-3 w-3" /> PDF
-                      </Button>
-                    )}
-                    {row.estatus === "R" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs gap-1"
+                        className="h-7 text-xs gap-1 text-blue-600 hover:text-blue-700"
                         onClick={(e) => handleMailOpen(e, row)}
                       >
                         <Mail className="h-3 w-3" /> Correo
@@ -541,7 +539,7 @@ export default function FacturasPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs gap-1"
+                        className="h-7 text-xs gap-1 text-green-600 hover:text-green-700"
                         onClick={(e) => handleAplicarPago(e, row)}
                       >
                         <Wallet className="h-3 w-3" /> Aplicar Pago
