@@ -111,6 +111,7 @@ interface FacturaRow {
   fecha: string                    // "DD/MM/YYYY"
   serie: string
   folio: string
+  cliente_id: string
   receptor_rfc: string
   receptor_nombre: string
   moneda_id: string

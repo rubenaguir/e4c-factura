@@ -21,6 +21,7 @@ import { PDF_SHEET_CLOSED, type PdfSheetState } from "@/modules/facturacion/pdfS
 import { CuentasAplicarSection } from "@/modules/ingresos/CuentasAplicarSection";
 import { useSnackbar } from "@/context/useSnackbar";
 import { useIngresoForm, needsTipoCambioPago } from "@/hooks/useIngresoForm";
+import { useIngresoPreselect } from "@/hooks/useIngresoPreselect";
 import type { CuentaCobrarPayload } from "@/api/endpoints/ingresos";
 
 // ---------------------------------------------------------------------------
@@ -192,6 +193,8 @@ export default function IngresoDetail() {
       form.reset();
     }
   }, [serie, folio]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useIngresoPreselect(isNew, form);
 
   const handleGuardar = async () => {
     const err = form.validate();

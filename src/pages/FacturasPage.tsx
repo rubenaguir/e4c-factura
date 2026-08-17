@@ -9,6 +9,7 @@ import {
   FileText,
   Mail,
   Eye,
+  Wallet,
 } from "lucide-react";
 import { PdfSheet } from "@/modules/facturacion/PdfSheet";
 import { PDF_SHEET_CLOSED, type PdfSheetState } from "@/modules/facturacion/pdfSheetState";
@@ -86,6 +87,10 @@ function estatusBadge(row: FacturaRow) {
 
 function showSaldo(row: FacturaRow) {
   return row.estatus === "R" && (row.estatus_cxc === "SP" || row.estatus_cxc === "VE");
+}
+
+function canApplyPago(row: FacturaRow) {
+  return row.estatus === "R" && row.estatus_cxc !== "P" && !!row.cliente_id;
 }
 
 function fmtCurrency(value: string, moneda: string) {
@@ -184,6 +189,13 @@ export default function FacturasPage() {
 
   const handleRowClick = (row: FacturaRow) => {
     navigate(`/facturas/${row.serie}/${row.folio}`);
+  };
+
+  const handleAplicarPago = (e: React.MouseEvent, row: FacturaRow) => {
+    e.stopPropagation();
+    navigate("/ingresos/nuevo", {
+      state: { clienteId: row.cliente_id, serie: row.serie, folio: row.folio },
+    });
   };
 
   const handlePdf = async (e: React.MouseEvent, row: FacturaRow) => {
@@ -425,6 +437,17 @@ export default function FacturasPage() {
                               <Mail className="h-4 w-4" />
                             </Button>
                           )}
+                          {canApplyPago(row) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              title="Aplicar Pago"
+                              onClick={(e) => handleAplicarPago(e, row)}
+                            >
+                              <Wallet className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -512,6 +535,16 @@ export default function FacturasPage() {
                         onClick={(e) => handleMailOpen(e, row)}
                       >
                         <Mail className="h-3 w-3" /> Correo
+                      </Button>
+                    )}
+                    {canApplyPago(row) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={(e) => handleAplicarPago(e, row)}
+                      >
+                        <Wallet className="h-3 w-3" /> Aplicar Pago
                       </Button>
                     )}
                   </div>

@@ -212,7 +212,7 @@ En `FacturasPage`, el badge de estatus para `R` vigente (sin cancelación en pro
 - Filtros: `fecha_inicial` (default −30 días), `fecha_final`, `rfc`, `nombre`, `serie`, `folio`, `pedido_serie`, `pedido_folio`, `estatus_cxc` (Todos/Prefactura/Cobrado/Saldo pendiente/Vencido/Cancelado — `NC` "No cobrado" se retiró del `<Select>` por confundirse con Saldo pendiente en pruebas con usuarios; ver `docs/spec/03-api-client.md` §Facturas), `disable_sucursal_filter`.
 - Tabla desktop / tarjetas mobile.
 - Paginación server-side (`start`/`limit=50`). La barra de paginación tiene dos filas: (1) `totalCount` junto con los agregados `totalGlobal` (importe total) y `cobradoGlobal` (importe cobrado) devueltos por `Search` sobre todo el resultado filtrado — no solo la página actual (ver `docs/spec/03-api-client.md` §Facturas); (2) `"Página X de Y"` junto con los botones prev/next. Se separaron en dos filas porque combinadas en una sola línea rompían el layout en mobile. Cuando solo hay una página (`totalPages <= 1`), la fila (2) se oculta por completo en mobile (no aporta nada navegable); en desktop se mantiene visible mostrando `"Página 1 de 1"` en vez de dejar el texto vacío. La fila (1) usa texto de énfasis normal (`text-foreground font-medium`, no `text-muted-foreground`) porque es el resumen agregado más relevante de la pantalla y se perdía visualmente con el estilo de texto secundario.
-- Acciones por fila: ver, PDF, correo.
+- Acciones por fila: ver, PDF, correo, **Aplicar Pago** (solo si `estatus === "R"` y `estatus_cxc !== "P"`, i.e. hay saldo pendiente): navega directo a `/ingresos/nuevo` pasando `{ clienteId: row.cliente_id, serie, folio }` como `router state` — no requiere una llamada previa a `Load`, `cliente_id` viene incluido en cada `FacturaRow` de `Search` (ver `docs/spec/03-api-client.md` §Facturas) — para preseleccionar cliente y factura en `IngresoDetail` (ver `docs/spec/05-screens.md` §IngresoDetail §Sección: Cliente y §Sección: Facturas a aplicar).
 
 ---
 
@@ -242,6 +242,8 @@ En `FacturasPage`, el badge de estatus para `R` vigente (sin cancelación en pro
 **Campos que se leen de `ValidateLovFieldClientes` / `LoadLovFieldClientes`:**
 `cliente_id`, `rfc`, `nombre`, `codigo_postal`, `regimen_fiscal_id`, `banco_id`, `banco_descr`, `sat_cta_ori`, `sat_banco_dest`, `sat_banco_dest_descr`, `sat_cta_dest`
 
+Al llegar desde el botón **Aplicar Pago** de `FacturasPage` (router `state`: `{ clienteId, serie, folio }`), el cliente se selecciona automáticamente por el mismo camino que la selección manual (`ValidateLovFieldClientes` + `SearchCuentasBancariasCliente` + `SearchCuentasCobrar`) — misma tarjeta de cliente que ya se muestra tras cualquier selección, sin UI distinta.
+
 ---
 
 ### Sección: Facturas a aplicar (multi-factura)
@@ -261,6 +263,8 @@ Al marcar una factura:
 El payload envía una fila `cuentas_cobrar[N][...]` por cada factura seleccionada con `importe > 0`; las de `importe = 0` se omiten. El `importe` de cada renglón va en la **moneda del pago**; el backend recalcula equivalencias y descuenta el saldo de cada factura. **No se recalcula nada de moneda en el frontend.**
 
 **Campos en estado (no necesariamente visibles):** `num_cta_cobrar`, `documento`, `documento_serie`, `documento_folio`, `cliente_id`, `rfc`, `nombre`, `subtotal`, `impuestos_ret`, `impuestos_tras`, `tipo_cambio`, `total_moneda_base`, `saldo_moneda_base`
+
+Si la navegación viene del botón **Aplicar Pago** de `FacturasPage` con `serie`/`folio` de precarga, en cuanto resuelve `SearchCuentasCobrar` se marca automáticamente el checkbox de la fila cuyo `documento_serie`/`documento_folio` coincidan (misma regla de pre-llenado de importe que la selección manual). Si no aparece en la lista (ya cobrada, cancelada entre el clic y la carga, etc.), no se marca nada y se usa el snackbar de error ya existente en la pantalla para avisar — no se agrega ningún elemento visual nuevo.
 
 ---
 
