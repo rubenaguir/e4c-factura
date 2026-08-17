@@ -523,29 +523,33 @@ export default function FacturasPage() {
 
       {/* Pagination */}
       {totalCount > 0 && (
-        <div className="flex items-center justify-between px-4 py-2 border-t bg-background text-sm">
-          <span className="text-muted-foreground">
+        <div className="border-t bg-background text-sm">
+          <div className="px-4 py-2 font-medium">
             {totalCount} factura{totalCount !== 1 ? "s" : ""}
             {` · Total ${fmtCurrency(totalGlobal, "MXN")} · Cobrado ${fmtCurrency(cobradoGlobal, "MXN")}`}
-            {totalPages > 1 && ` · Página ${page + 1} de ${totalPages}`}
-          </span>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!canPrev || loading}
-              onClick={() => search(activeFilters, page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!canNext || loading}
-              onClick={() => search(activeFilters, page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          </div>
+          <div className="flex items-center justify-between px-4 py-2 border-t">
+            <span className="text-muted-foreground">
+              {totalPages > 1 ? `Página ${page + 1} de ${totalPages}` : ""}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!canPrev || loading}
+                onClick={() => search(activeFilters, page - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!canNext || loading}
+                onClick={() => search(activeFilters, page + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       )}
