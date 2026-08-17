@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Loader2, FileText, Mail, FilePlus2,
@@ -143,6 +143,7 @@ export default function IngresoDetail() {
   const { serie, folio } = useParams<{ serie: string; folio: string }>();
   const navigate = useNavigate();
   const isNew = !serie && !folio;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { loadOne, add, stamp, cancel, sendMail, printPdf } = useIngresos();
   const { formaPago, ensure } = useCatalogos();
@@ -195,6 +196,13 @@ export default function IngresoDetail() {
   }, [serie, folio]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useIngresoPreselect(isNew, form);
+
+  useEffect(() => {
+    if (isNew && !form.clienteId) {
+      form.searchInputRef.current?.focus();
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, [isNew, form.clienteId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGuardar = async () => {
     const err = form.validate();
@@ -324,6 +332,12 @@ export default function IngresoDetail() {
       setMailNombre("");
       setMailCorreo("");
       setCancelMotivo("02");
+      // Ya estamos en /ingresos/nuevo (isNew no cambia), así que el useEffect
+      // de foco/scroll no se vuelve a disparar por dependencias sin cambios.
+      // El input y el contenedor ya están montados, así que se puede llamar
+      // directo aquí sin esperar a un nuevo render.
+      form.searchInputRef.current?.focus();
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: "auto" });
     } else {
       navigate("/ingresos/nuevo");
     }
@@ -388,7 +402,7 @@ export default function IngresoDetail() {
         )}
       </div>
 
-      <div className="flex-1 overflow-auto pb-20">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto pb-20">
         <div className="max-w-2xl mx-auto p-4 space-y-4">
 
         {/* ── CLIENTE ──────────────────────────────────────────────── */}
@@ -415,6 +429,7 @@ export default function IngresoDetail() {
                   ? <Loader2 className="absolute left-2.5 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
                   : <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />}
                 <Input
+                  ref={form.searchInputRef}
                   className="pl-8"
                   placeholder="Buscar cliente por nombre o RFC…"
                   value={form.searchQuery}

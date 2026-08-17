@@ -65,6 +65,7 @@ export function useIngresoForm() {
   const [searching, setSearching] = useState(false);
   const debRef = useRef<number | undefined>(undefined);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Cuentas por cobrar + aplicaciones (multi-factura)
   const [cuentasCobrar, setCuentasCobrar] = useState<CuentaCobrar[]>([]);
@@ -299,7 +300,7 @@ export function useIngresoForm() {
     // Client
     clienteId, clienteNombre, clienteRfc, clienteCP, clienteRegimen, loadingCliente,
     // Search
-    searchQuery, searchResults, showDrop, setShowDrop, searching, searchContainerRef,
+    searchQuery, searchResults, showDrop, setShowDrop, searching, searchContainerRef, searchInputRef,
     // Cuentas / aplicaciones
     cuentasCobrar, aplicaciones, loadingCuentas, importeTotal,
     // Payment
