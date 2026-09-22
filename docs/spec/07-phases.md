@@ -174,6 +174,24 @@ Módulo backend: `inventarios:catalogo_inventarios:catalogo_inventarios:*`
 
 ---
 
+## Fase 10 — Alta Self-Service (Registro de Nuevas Cuentas) ⚠️ Pendiente
+
+**Entregable:** flujo público de registro que permite a un usuario nuevo crear su cuenta sin intervención de soporte, con verificación de RFC y email como control anti-abuso.
+
+**Depende de:** el proxy en el backend PHP de SisnetV3 hacia InstanceManager — **ya implementado** (2026-09-04, ver `docs/spec/14-alta-self-service.md` §Contrato). Pendiente solo de credenciales reales de InstanceManager para pruebas de punta a punta; no bloquea empezar esta fase.
+
+1. `src/hooks/useRegistroForm.ts` — estado del wizard, validaciones, polling de `EstadoRegistro` (usa el `apiCall` existente, sin cliente nuevo — ver `14-alta-self-service.md` §Cliente API)
+2. `src/components/registro/` — `DatosFiscalesStep`, `CuentaAccesoStep`, `VerificacionStep`, `AprovisionandoScreen`, `RegistroProgress`
+3. `src/pages/RegistroPage.tsx` — orquesta el wizard
+4. Ruta pública `/registro`, link desde `LoginPage`
+5. Banner de recordatorio de CSD en `AppShell` (requiere flag `csd_cargado` — mismo prompt de SisnetV3 que el proxy)
+
+**Leer antes:** `docs/spec/14-alta-self-service.md`, `docs/spec/08-decisions.md` #13–17
+
+**Éxito:** un usuario nuevo completa el registro sin intervención de soporte, recibe su cuenta aprovisionada (instancia + BD + PAC) y puede hacer login; si no ha subido su CSD, ve el recordatorio pero puede seguir explorando la app.
+
+---
+
 ## Fuera de alcance
 
 - CRM (prospectos, oportunidades, activities)

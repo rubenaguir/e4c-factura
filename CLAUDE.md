@@ -88,6 +88,7 @@ React 19 · Vite 5 · TypeScript 5 · React Router v6 · Tailwind 3 · shadcn/ui
 | **Pago integrado PUE en FacturaDetail** (pendiente backend) | `docs/spec/10-pago-integrado-pue.md` |
 | **Dashboard de indicadores** (Fase 7) | `docs/spec/12-dashboard.md` |
 | **Perfil y configuración de empresa / CSD** | `docs/spec/13-perfil-empresa.md` |
+| **Alta self-service** (registro de cuentas nuevas, sin backend PHP tocado) | `docs/spec/14-alta-self-service.md` |
 
 ### Qué leer por fase
 

@@ -8,7 +8,10 @@ PWA React de facturación para **Sisnet V3 / PLANATOR ERP**. Reemplaza pantallas
 
 ### Restricciones clave
 
-- Backend PHP (`SisnetV3Desarrollo/`) **no se modifica** — API externa.
+- Backend PHP (`SisnetV3Desarrollo/`) **no se modifica desde este repo** — se consume como API externa.
+  Cuando un cambio ahí es indispensable (p. ej. un proxy de servicio-a-servicio, un flag nuevo en una respuesta),
+  se pide como **prompt independiente ejecutado en el propio repositorio de SisnetV3**, respetando sus
+  guardrails — nunca editando ese código desde aquí. Ver `docs/spec/08-decisions.md` #20.
 - Conectividad: `fetch` nativo. Sin Axios.
 - Estado: React Context. Sin Redux/Zustand/TanStack Query.
 - **Online-first.** Mutaciones (timbrado) siempre online — no Background Sync.
