@@ -181,7 +181,7 @@ function TabBar({
 export default function ClienteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isNew = id === "nuevo";
+  const isNew = !id || id === "nuevo";
 
   const { state, loadOne, add, update, validateCP, searchDirecciones, saveDireccion } =
     useClientes();

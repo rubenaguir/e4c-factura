@@ -69,6 +69,37 @@ export const OBJETO_IMPUESTO_RECORDS: ObjetoImpuestoRecord[] = [
   { clave: "05", descripcion: "Sí objeto del impuesto, IVA crédito PODEBI" },
 ];
 
+/**
+ * Catálogo c_RegimenFiscal del SAT, estático.
+ *
+ * `loadRegimenFiscal()` (SearchRegimenesSAT) exige sesión — no está en la
+ * whitelist sin-JWT de `interfase_jwt.php` —, así que el registro público
+ * (`/registro`, §14) no puede consumirlo. Este arreglo es el mismo catálogo
+ * publicado por el SAT, con el shape de `RegimenFiscalRecord` para que el
+ * picker de `/registro` y el de Perfil sean intercambiables.
+ */
+export const REGIMEN_FISCAL_SAT_RECORDS: RegimenFiscalRecord[] = [
+  { regimen_fiscal_id: "601", regimen: "General de Ley Personas Morales" },
+  { regimen_fiscal_id: "603", regimen: "Personas Morales con Fines no Lucrativos" },
+  { regimen_fiscal_id: "605", regimen: "Sueldos y Salarios e Ingresos Asimilados a Salarios" },
+  { regimen_fiscal_id: "606", regimen: "Arrendamiento" },
+  { regimen_fiscal_id: "607", regimen: "Régimen de Enajenación o Adquisición de Bienes" },
+  { regimen_fiscal_id: "608", regimen: "Demás ingresos" },
+  { regimen_fiscal_id: "610", regimen: "Residentes en el Extranjero sin Establecimiento Permanente en México" },
+  { regimen_fiscal_id: "611", regimen: "Ingresos por Dividendos (socios y accionistas)" },
+  { regimen_fiscal_id: "612", regimen: "Personas Físicas con Actividades Empresariales y Profesionales" },
+  { regimen_fiscal_id: "614", regimen: "Ingresos por intereses" },
+  { regimen_fiscal_id: "615", regimen: "Régimen de los ingresos por obtención de premios" },
+  { regimen_fiscal_id: "616", regimen: "Sin obligaciones fiscales" },
+  { regimen_fiscal_id: "620", regimen: "Sociedades Cooperativas de Producción que optan por diferir sus ingresos" },
+  { regimen_fiscal_id: "621", regimen: "Incorporación Fiscal" },
+  { regimen_fiscal_id: "622", regimen: "Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras" },
+  { regimen_fiscal_id: "623", regimen: "Opcional para Grupos de Sociedades" },
+  { regimen_fiscal_id: "624", regimen: "Coordinados" },
+  { regimen_fiscal_id: "625", regimen: "Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas" },
+  { regimen_fiscal_id: "626", regimen: "Régimen Simplificado de Confianza" },
+];
+
 // ---------------------------------------------------------------------------
 // Async fetch helpers — one per catalog
 // Real opReq names taken from PHP backend function names in php/library/lov/

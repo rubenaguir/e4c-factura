@@ -1,16 +1,27 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, Fingerprint, Loader2 } from "lucide-react";
+import { CircleCheck, Eye, EyeOff, Fingerprint, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import logoEmpresa4Cero from "@/assets/empresa4cero-logo.svg";
 import type { SucursalOption } from "@/api/endpoints/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSnackbar } from "@/context/useSnackbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+/**
+ * Estado de navegación que deja `/registro` al completarse el alta (§14 Paso 4):
+ * `usuario` prellenado con el `usuario_id` que devuelve `EstadoRegistro`.
+ */
+interface LoginNavState {
+  prefillUsuario?: string;
+  successMessage?: string;
+}
 
 // ── Paso 1: credenciales ────────────────────────────────────────────────────
 const step1Schema = z.object({
@@ -28,6 +39,8 @@ type Step2Values = z.infer<typeof step2Schema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navState = (location.state ?? null) as LoginNavState | null;
   const { getSucursales, login, hasBiometric, loginWithBiometric } = useAuth();
 
   const { showError } = useSnackbar();
@@ -36,11 +49,19 @@ export default function LoginPage() {
   const [credenciales, setCredenciales] = useState<Step1Values | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Se captura una sola vez: un refresh no debe repetir el mensaje de bienvenida.
+  const [successMessage] = useState<string | null>(navState?.successMessage ?? null);
+
+  useEffect(() => {
+    if (navState) window.history.replaceState(null, "");
+    // Solo al montar: limpia el state de navegación ya consumido.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Formulario paso 1 ────────────────────────────────────────────────────
   const form1 = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
-    defaultValues: { usuario: "", contrasena: "" },
+    defaultValues: { usuario: navState?.prefillUsuario ?? "", contrasena: "" },
   });
 
   const onStep1Submit = async (values: Step1Values) => {
@@ -127,9 +148,7 @@ export default function LoginPage() {
       <Card className="relative w-full max-w-sm shadow-[0_25px_50px_-6px_rgba(0,0,0,1)] bg-white">
         <CardHeader className="space-y-1 pb-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-9 w-9 rounded-lg brand-gradient flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-sm">E4</span>
-            </div>
+            <img src={logoEmpresa4Cero} alt="Empresa4Cero" className="h-9 w-9" />
             <CardTitle className="text-xl brand-gradient-text">E4C Facturación</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -138,6 +157,13 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {successMessage && (
+            <Alert className="border-green-600/40 bg-green-50 text-green-800">
+              <CircleCheck className="h-4 w-4 !text-green-700" />
+              <AlertDescription className="whitespace-pre-line">{successMessage}</AlertDescription>
+            </Alert>
+          )}
+
           {/* ── Paso 1 ── */}
           {step === 1 && (
             <form onSubmit={form1.handleSubmit(onStep1Submit)} className="space-y-4">
@@ -205,6 +231,15 @@ export default function LoginPage() {
                 </>
               )}
             </form>
+          )}
+
+          {step === 1 && (
+            <p className="text-center text-sm text-muted-foreground">
+              ¿No tienes cuenta?{" "}
+              <Link to="/registro" className="text-primary underline font-medium">
+                Crear cuenta
+              </Link>
+            </p>
           )}
 
           {/* ── Paso 2 ── */}

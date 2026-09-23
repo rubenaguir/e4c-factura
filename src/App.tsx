@@ -12,6 +12,7 @@ import ProductoDetail from "@/pages/ProductoDetail";
 import FacturaDetail from "@/pages/FacturaDetail";
 import DashboardPage from "@/pages/DashboardPage";
 import PerfilPage from "@/pages/PerfilPage";
+import RegistroPage from "@/pages/RegistroPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -31,6 +32,14 @@ const router = createHashRouter([
     element: (
       <RedirectIfAuth>
         <LoginPage />
+      </RedirectIfAuth>
+    ),
+  },
+  {
+    path: "/registro",
+    element: (
+      <RedirectIfAuth>
+        <RegistroPage />
       </RedirectIfAuth>
     ),
   },

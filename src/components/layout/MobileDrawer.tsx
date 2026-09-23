@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { LogOut, X, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { navItems } from "./navItems";
+import logoEmpresa4Cero from "@/assets/empresa4cero-logo.svg";
 
 interface MobileDrawerProps {
   open: boolean;
@@ -30,9 +31,7 @@ export default function MobileDrawer({ open, onClose }: MobileDrawerProps) {
       <aside className="fixed top-0 left-0 h-full w-64 z-50 bg-background border-r flex flex-col md:hidden">
         <div className="flex items-center justify-between h-14 px-4 border-b">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">E4</span>
-            </div>
+            <img src={logoEmpresa4Cero} alt="Empresa4Cero" className="h-7 w-7" />
             <span className="font-semibold text-sm">E4C Facturación</span>
           </div>
           <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground">

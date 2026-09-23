@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import logoEmpresa4Cero from "@/assets/empresa4cero-logo.svg";
 
 interface TopBarProps {
   /** Solo mobile: controla el drawer lateral */
@@ -97,7 +98,7 @@ export default function TopBar({ mobileMenuOpen, onMobileMenuToggle }: TopBarPro
       {/* Logo */}
       <div className="flex items-center gap-2">
         <div className="h-7 w-7 rounded-md bg-white/20 flex items-center justify-center">
-          <span className="text-white font-bold text-xs">E4</span>
+          <img src={logoEmpresa4Cero} alt="Empresa4Cero" className="h-6 w-6 brightness-0 invert" />
         </div>
         <span className="font-semibold text-sm text-white">E4C Facturación</span>
       </div>
